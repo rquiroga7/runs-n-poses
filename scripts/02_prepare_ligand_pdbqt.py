@@ -24,8 +24,9 @@ from tqdm import tqdm
 def convert_smiles_to_pdbqt(smiles: str, output_file: str, obabel_path: str = "obabel-25-07") -> bool:
     """
     Convert a SMILES string to PDBQT format using obabel.
-    
-    The ligand should be explicited (not implicit hydrogens) for docking.
+
+    -d: add hydrogens (with correct protonation state)
+    Note: We do NOT use -xc or -xr for ligands (unlike receptors).
     """
     cmd = [
         obabel_path,
@@ -33,8 +34,7 @@ def convert_smiles_to_pdbqt(smiles: str, output_file: str, obabel_path: str = "o
         "-osmi",  # input is SMILES
         "-O", output_file,
         "--gen3d",  # Generate 3D coordinates
-        "-p", "7.4",  # Add hydrogens at pH 7.4
-        "-h"  # Add hydrogens
+        "-d"  # add hydrogens
     ]
     
     try:

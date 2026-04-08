@@ -1,24 +1,37 @@
 #
 # Conda environment definition with dependencies
 #
+# NOTE: The original environment.yaml has dependency conflicts between
+# openstructure, boost, and rdkit when using conda's solver.
+#
+# To install, run these commands IN ORDER:
+#
+#   1. conda create -n runs_n_poses python=3.10 -c conda-forge -y
+#   2. conda install -n runs_n_poses -c conda-forge -c aivant openstructure=2.8.0 -y
+#   3. conda install -n runs_n_poses -c conda-forge pandas ipykernel jupyter scikit-learn cmap matplotlib seaborn pyyaml reduce -y
+#   4. conda run -n runs_n_poses pip install rdkit plinder
+#
+# Alternatively, use the pre-solved environment:
+#   conda env create -f environment.working.yaml
+#
 name: runs_n_poses
 channels:
-  - metalcycling
   - conda-forge
   - aivant
-  - defaults
   - bioconda
+  - defaults
 dependencies:
-  - python=3.10.*
-  - reduce
-  - aivant::openstructure=2.8.0
-  - boost=1.82
-  - rdkit
+  - python=3.10
+  - openstructure=2.8.0
   - pandas
   - ipykernel
   - jupyter
+  - scikit-learn
+  - cmap
+  - matplotlib
+  - seaborn
+  - pyyaml
+  - reduce
   - pip:
+    - rdkit
     - plinder
-    - scikit-learn
-    - cmap
-    - keyrings.google-artifactregistry-auth==1.1.2

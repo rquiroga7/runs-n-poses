@@ -39,17 +39,19 @@ def find_receptor_and_cofactors(system_dir: Path, annotations_row=None) -> list:
 
 def convert_to_pdbqt(input_file: str, output_file: str, obabel_path: str = "obabel-25-07") -> bool:
     """
-    Convert a CIF/PDB file to PDBQT format using obabel with -xc -xr flags.
-    
-    -xc: remove charges
-    -xr: remove residues (actually keeps only organic/coordination compounds)
+    Convert a CIF/PDB file to PDBQT format using obabel.
+
+    -d:   add hydrogens (with correct protonation state)
+    -xc:  remove charges
+    -xr:  remove residues (keeps only organic/coordination compounds)
     """
     cmd = [
         obabel_path,
         input_file,
         "-O", output_file,
-        "-h",  # Add hydrogens
-        "-xc", "-xr"
+        "-d",   # add hydrogens
+        "-xc",  # remove charges
+        "-xr"   # remove residues
     ]
     
     try:
