@@ -1,0 +1,13 @@
+--scoring.wRP    3.499
+--scoring.sRP    1.759
+--scoring.sSR    0.603
+--scoring.sLR    1.601
+--scoring.sHB    0.390
+--scoring.gHB    0.776
+--scoring.scale_intra      0.414
+--scoring.scale_intra_14   0.189
+--scoring.scale_tors       0.037
+--scoring.table   param.dat
+--scoring.tableTxT  param.TxT.dat
+--autobox
+
