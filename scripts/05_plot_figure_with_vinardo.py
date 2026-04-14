@@ -139,22 +139,8 @@ def load_data(data_dir: Path, methods: list):
                 full_datasets[method]["pb_success"].fillna(False).astype(float)
             )
         else:
-            # Try to read pb_success from the predictions file we already loaded
-            if "pb_success" in df.columns:
-                bust_df = (
-                    df[["target", "ligand_instance_chain", "pb_success"]]
-                    .rename(columns={"target": "system_id"})
-                )
-                full_datasets[method] = full_datasets[method].merge(
-                    bust_df[["system_id", "ligand_instance_chain", "pb_success"]],
-                    on=["system_id", "ligand_instance_chain"],
-                    how="left",
-                )
-                full_datasets[method]["pb_success"] = (
-                    full_datasets[method]["pb_success"].fillna(False).astype(float)
-                )
-            else:
-                full_datasets[method]["pb_success"] = -1
+            # No PoseBusters file available — mark pb_success as unknown (-1)
+            full_datasets[method]["pb_success"] = -1
 
     return full_datasets, annotated_df
 
@@ -212,7 +198,7 @@ def main():
     parser.add_argument(
         "--common-subset-only",
         action="store_true",
-        help="Only include systems where ALL methods (including vinardo) have results",
+        help="Only include systems where ALL methods (including vinardock) have results",
     )
 
     args = parser.parse_args()

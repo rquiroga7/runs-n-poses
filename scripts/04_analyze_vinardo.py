@@ -32,6 +32,29 @@ ANNOTATIONS = Path("/home/rquiroga/Datasets/runs-n-poses-datasets/annotations.cs
 OUTPUT_CSV = Path("/home/rquiroga/Datasets/runs-n-poses-datasets/predictions/vinardock_2vinardo.csv")
 POSEBUSTERS_CSV = Path("/home/rquiroga/Datasets/runs-n-poses-datasets/posebusters_results/vinardock_2vinardo.csv")
 
+# Canonical PoseBusters (AF3) column order - used to normalize output CSVs
+CANONICAL_PB_COLUMNS = [
+    "molecule", "position", "mol_pred_loaded", "mol_true_loaded", "mol_cond_loaded",
+    "sanitization", "inchi_convertible", "all_atoms_connected", "molecular_formula",
+    "molecular_bonds", "double_bond_stereochemistry", "tetrahedral_chirality",
+    "bond_lengths", "bond_angles", "internal_steric_clash", "aromatic_ring_flatness",
+    "non-aromatic_ring_non-flatness", "double_bond_flatness", "internal_energy",
+    "protein-ligand_maximum_distance", "minimum_distance_to_protein",
+    "minimum_distance_to_organic_cofactors", "minimum_distance_to_inorganic_cofactors",
+    "minimum_distance_to_waters", "volume_overlap_with_protein",
+    "volume_overlap_with_organic_cofactors", "volume_overlap_with_inorganic_cofactors",
+    "volume_overlap_with_waters", "system_id", "seed", "sample", "ligand_chain", "method"
+]
+
+# Subset of check columns that are boolean pass/fail in PoseBusters
+PB_CHECK_COLUMNS = {
+    "sanitization", "inchi_convertible", "all_atoms_connected",
+    "bond_lengths", "bond_angles", "internal_steric_clash",
+    "aromatic_ring_flatness", "double_bond_flatness",
+    "internal_energy", "protein-ligand_maximum_distance",
+    "minimum_distance_to_protein"
+}
+
 # Tools
 OST = "/home/rquiroga/anaconda3/envs/runs_n_poses/bin/ost"
 PB_VENV_PYTHON = "/home/rquiroga/Datasets/Posebusters/venv/bin/python"
@@ -182,20 +205,29 @@ print(results.to_json(orient="records"))
     return {"pb_success": False}
 
 
-def analyze_system(system_id: str, annotations: pd.DataFrame, run_posebusters_flag: bool = True) -> list:
-    """Analyze all ligands for a system."""
+def analyze_system(system_id: str, annotations: pd.DataFrame, run_posebusters_flag: bool = True,
+                   run_ost_flag: bool = True):
+    """Analyze all ligands for a system.
+
+    Parameters:
+    - run_posebusters_flag: whether to run PoseBusters for each ligand
+    - run_ost_flag: whether to run OST and extract metrics for each ligand
+    If run_ost_flag is False, the function will still attempt to run PoseBusters
+    (if requested) but will not produce prediction metric rows.
+    """
     system_annot = annotations[annotations["system_id"] == system_id]
     if system_annot.empty:
-        return []
+        return [], []
 
     results = []
+    pb_rows = []
     system_out = OUTPUT_DIR / system_id
     if not system_out.exists():
-        return []
+        return [], []
 
     receptor_cif = GT_DIR / system_id / "receptor.cif"
     if not receptor_cif.exists():
-        return []
+        return [], []
 
     for lig_dir in sorted(system_out.iterdir()):
         if not lig_dir.is_dir():
@@ -239,31 +271,51 @@ def analyze_system(system_id: str, annotations: pd.DataFrame, run_posebusters_fl
         if not gt_sdf.exists():
             continue
 
-        # Run ost comparison (ligand-only comparison against ground truth)
+        # Run OST comparison and/or PoseBusters depending on flags
         ANALYSIS_DIR.mkdir(parents=True, exist_ok=True)
         json_file = ANALYSIS_DIR / f"{system_id}_{chain}.json"
 
-        if not json_file.exists():
-            if not run_ost_comparison(str(receptor_cif), str(docked_sdf), str(gt_sdf), str(json_file)):
-                continue
+        # Convert and ensure docked_sdf exists (needed for PoseBusters even if OST skipped)
+        # (docked_sdf already created above)
 
-        # Extract metrics
-        annot_row = system_annot[system_annot["ligand_instance_chain"] == chain]
-        if annot_row.empty:
-            continue
-
-        metrics = extract_metrics_from_ost(str(json_file), system_id, chain,
-                                           annot_row.iloc[0].to_dict(), vinardo_score)
-        if metrics:
-            # Run PoseBusters
-            if run_posebusters_flag:
-                pb_results = run_posebusters(str(docked_sdf), str(gt_sdf), str(receptor_cif))
+        # If OST is requested, run it (unless json exists)
+        metrics = None
+        if run_ost_flag:
+            if not json_file.exists():
+                if not run_ost_comparison(str(receptor_cif), str(docked_sdf), str(gt_sdf), str(json_file)):
+                    # if OST fails and we're not running PoseBusters, skip this ligand
+                    if not run_posebusters_flag:
+                        continue
+            # Extract metrics if json exists
+            if json_file.exists():
+                annot_row = system_annot[system_annot["ligand_instance_chain"] == chain]
+                if not annot_row.empty:
+                    metrics = extract_metrics_from_ost(str(json_file), system_id, chain,
+                                                       annot_row.iloc[0].to_dict(), vinardo_score)
+                else:
+                    metrics = None
+        # Run PoseBusters if requested
+        if run_posebusters_flag:
+            pb_results = run_posebusters(str(docked_sdf), str(gt_sdf), str(receptor_cif))
+            # If metrics are present (we extracted OST), augment with pb_success
+            if metrics is not None:
                 metrics["pb_success"] = 1.0 if pb_results.get("pb_success", False) else 0.0
-            else:
+            # Build a row for the PoseBusters CSV matching af3.csv-like format
+            pb_row = dict(pb_results) if isinstance(pb_results, dict) else {}
+            pb_row["system_id"] = system_id
+            pb_row.setdefault("seed", (metrics.get("seed", 1) if metrics is not None else 1))
+            pb_row.setdefault("sample", (metrics.get("sample", 1) if metrics is not None else 1))
+            pb_row.setdefault("ligand_chain", chain)
+            pb_row.setdefault("method", "vinardock_2vinardo")
+            pb_rows.append(pb_row)
+        else:
+            if metrics is not None:
                 metrics["pb_success"] = -1.0
+
+        if metrics is not None:
             results.append(metrics)
 
-    return results
+    return results, pb_rows
 
 
 def main():
@@ -290,39 +342,91 @@ def main():
 
     print(f"Analyzing {len(system_ids)} systems (posebusters={'ON' if run_pb else 'OFF'})...")
 
-    # If resuming, read existing output CSV to find already processed systems
-    processed_targets = set()
-    if resume and OUTPUT_CSV.exists():
-        try:
-            existing = pd.read_csv(OUTPUT_CSV)
-            if 'target' in existing.columns:
-                processed_targets = set(existing['target'].astype(str).unique())
-        except Exception:
-            processed_targets = set()
+    # If resuming, read existing Predictions and PoseBusters CSVs to determine what to skip
+    processed_pred_targets = set()
+    processed_pb_targets = set()
+    if resume:
+        if OUTPUT_CSV.exists():
+            try:
+                existing_preds = pd.read_csv(OUTPUT_CSV, low_memory=False)
+                if 'target' in existing_preds.columns:
+                    processed_pred_targets = set(existing_preds['target'].astype(str).unique())
+            except Exception:
+                processed_pred_targets = set()
+        if POSEBUSTERS_CSV.exists():
+            try:
+                existing_pb = pd.read_csv(POSEBUSTERS_CSV, low_memory=False)
+                if 'system_id' in existing_pb.columns:
+                    processed_pb_targets = set(existing_pb['system_id'].astype(str).unique())
+            except Exception:
+                processed_pb_targets = set()
 
     OUTPUT_CSV.parent.mkdir(parents=True, exist_ok=True)
 
     total_metrics = 0
+    # Ensure posebusters_results directory exists
+    POSEBUSTERS_CSV.parent.mkdir(parents=True, exist_ok=True)
+
     for sid in tqdm(system_ids, desc="Analyzing"):
-        if resume and sid in processed_targets:
-            tqdm.write(f"Skipping {sid} (already present in {OUTPUT_CSV})")
+        # Determine per-system resume state
+        pred_done = resume and (sid in processed_pred_targets)
+        pb_done = resume and (sid in processed_pb_targets)
+
+        # If both parts already done, skip
+        if pred_done and pb_done:
+            tqdm.write(f"Skipping {sid} (already in {OUTPUT_CSV} and {POSEBUSTERS_CSV})")
             continue
 
-        metrics = analyze_system(sid, annotations, run_posebusters_flag=run_pb)
-        if not metrics:
+        # Decide which parts to run
+        run_ost_flag = not pred_done
+        run_pb_for_system = run_pb and (not pb_done)
+
+        metrics, pb_rows = analyze_system(sid, annotations,
+                                         run_posebusters_flag=run_pb_for_system,
+                                         run_ost_flag=run_ost_flag)
+
+        # If no metrics produced and no PB rows, nothing to write
+        if (not metrics) and (not pb_rows):
             continue
 
-        # Append per-system results to CSV to save progress incrementally
-        df_sys = pd.DataFrame(metrics)
-        write_header = not OUTPUT_CSV.exists()
-        try:
-            df_sys.to_csv(OUTPUT_CSV, index=False, header=write_header, mode='a')
-        except Exception:
-            # fallback: try writing normally
-            df_sys.to_csv(OUTPUT_CSV, index=False)
+        # Append per-system metrics to predictions CSV (only if OST/metrics were run)
+        if metrics and run_ost_flag:
+            df_sys = pd.DataFrame(metrics)
+            write_header = not OUTPUT_CSV.exists()
+            try:
+                df_sys.to_csv(OUTPUT_CSV, index=False, header=write_header, mode='a')
+            except Exception:
+                df_sys.to_csv(OUTPUT_CSV, index=False)
+            processed_pred_targets.add(sid)
 
-        total_metrics += len(df_sys)
-        processed_targets.add(sid)
+        # Append PoseBusters rows if any; normalize to AF3 canonical columns
+        if pb_rows and run_pb_for_system:
+            df_pb = pd.DataFrame(pb_rows)
+            # Ensure essential metadata columns exist
+            for c, default in [("system_id", sid), ("seed", 1), ("sample", 1), ("ligand_chain", None), ("method", "vinardock_2vinardo")]:
+                if c not in df_pb.columns:
+                    df_pb[c] = default
+
+            # Reindex to canonical AF3 columns; missing columns will be created
+            for col in CANONICAL_PB_COLUMNS:
+                if col not in df_pb.columns:
+                    df_pb[col] = pd.NA
+            df_pb = df_pb[CANONICAL_PB_COLUMNS]
+
+            # Fill missing boolean check columns with False (fail) where appropriate
+            for chk in PB_CHECK_COLUMNS:
+                if chk in df_pb.columns:
+                    df_pb[chk] = df_pb[chk].fillna(False)
+
+            write_header_pb = not POSEBUSTERS_CSV.exists()
+            try:
+                df_pb.to_csv(POSEBUSTERS_CSV, index=False, header=write_header_pb, mode='a')
+            except Exception:
+                df_pb.to_csv(POSEBUSTERS_CSV, index=False)
+            processed_pb_targets.add(sid)
+
+        if metrics and run_ost_flag:
+            total_metrics += len(df_sys)
 
     if total_metrics > 0:
         df_final = pd.read_csv(OUTPUT_CSV)

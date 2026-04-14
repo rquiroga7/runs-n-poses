@@ -248,7 +248,16 @@ def make_one_plot_pb(
         f"{title} only",
     ]
 
-    ax.legend(all_handles, all_labels, loc="center left", frameon=False)
+    # Place legend at top-left of the axes without overlapping the panel label
+    ax.legend(
+        all_handles,
+        all_labels,
+        loc="upper left",
+        bbox_to_anchor=(0.02, 0.88),
+        bbox_transform=ax.transAxes,
+        frameon=False,
+        ncol=1,
+    )
     ax.grid(True, linestyle="--", alpha=0.7, zorder=0)
     ax.set_xlim(
         -total_width / 2 - bar_width / 2,
