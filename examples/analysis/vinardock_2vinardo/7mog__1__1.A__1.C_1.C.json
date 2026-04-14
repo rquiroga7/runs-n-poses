@@ -1,0 +1,39 @@
+{
+    "model_ligands": [
+        "/home/rquiroga/Datasets/runs-n-poses-datasets/vinardo_outputs/7mog__1__1.A__1.C/7mog__1__1.A__1.C_1.C/1.C_dock.sdf"
+    ],
+    "reference_ligands": [
+        "/home/rquiroga/Datasets/runs-n-poses-datasets/ground_truth/7mog__1__1.A__1.C/ligand_files/1.C.sdf"
+    ],
+    "lddt_pli": {
+        "assigned_scores": [],
+        "model_ligand_unassigned_reason": {
+            "/home/rquiroga/Datasets/runs-n-poses-datasets/vinardo_outputs/7mog__1__1.A__1.C/7mog__1__1.A__1.C_1.C/1.C_dock.sdf": [
+                "symmetries",
+                "Too many symmetries between ligand atoms were found - increasing max_symmetries might help"
+            ]
+        },
+        "reference_ligand_unassigned_reason": {
+            "/home/rquiroga/Datasets/runs-n-poses-datasets/ground_truth/7mog__1__1.A__1.C/ligand_files/1.C.sdf": [
+                "symmetries",
+                "Too many symmetries between ligand atoms were found - increasing max_symmetries might help"
+            ]
+        }
+    },
+    "rmsd": {
+        "assigned_scores": [],
+        "model_ligand_unassigned_reason": {
+            "/home/rquiroga/Datasets/runs-n-poses-datasets/vinardo_outputs/7mog__1__1.A__1.C/7mog__1__1.A__1.C_1.C/1.C_dock.sdf": [
+                "symmetries",
+                "Too many symmetries between ligand atoms were found - increasing max_symmetries might help"
+            ]
+        },
+        "reference_ligand_unassigned_reason": {
+            "/home/rquiroga/Datasets/runs-n-poses-datasets/ground_truth/7mog__1__1.A__1.C/ligand_files/1.C.sdf": [
+                "symmetries",
+                "Too many symmetries between ligand atoms were found - increasing max_symmetries might help"
+            ]
+        }
+    },
+    "status": "SUCCESS"
+}

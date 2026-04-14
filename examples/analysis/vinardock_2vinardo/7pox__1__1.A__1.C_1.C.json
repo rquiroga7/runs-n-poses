@@ -1,0 +1,39 @@
+{
+    "model_ligands": [
+        "/home/rquiroga/Datasets/runs-n-poses-datasets/vinardo_outputs/7pox__1__1.A__1.C/7pox__1__1.A__1.C_1.C/1.C_dock.sdf"
+    ],
+    "reference_ligands": [
+        "/home/rquiroga/Datasets/runs-n-poses-datasets/ground_truth/7pox__1__1.A__1.C/ligand_files/1.C.sdf"
+    ],
+    "lddt_pli": {
+        "assigned_scores": [],
+        "model_ligand_unassigned_reason": {
+            "/home/rquiroga/Datasets/runs-n-poses-datasets/vinardo_outputs/7pox__1__1.A__1.C/7pox__1__1.A__1.C_1.C/1.C_dock.sdf": [
+                "disconnected",
+                "Ligand graph is disconnected"
+            ]
+        },
+        "reference_ligand_unassigned_reason": {
+            "/home/rquiroga/Datasets/runs-n-poses-datasets/ground_truth/7pox__1__1.A__1.C/ligand_files/1.C.sdf": [
+                "single_ligand_issue",
+                "Cannot compute valid pairwise score as either model or target ligand have non-zero state."
+            ]
+        }
+    },
+    "rmsd": {
+        "assigned_scores": [],
+        "model_ligand_unassigned_reason": {
+            "/home/rquiroga/Datasets/runs-n-poses-datasets/vinardo_outputs/7pox__1__1.A__1.C/7pox__1__1.A__1.C_1.C/1.C_dock.sdf": [
+                "disconnected",
+                "Ligand graph is disconnected"
+            ]
+        },
+        "reference_ligand_unassigned_reason": {
+            "/home/rquiroga/Datasets/runs-n-poses-datasets/ground_truth/7pox__1__1.A__1.C/ligand_files/1.C.sdf": [
+                "single_ligand_issue",
+                "Cannot compute valid pairwise score as either model or target ligand have non-zero state."
+            ]
+        }
+    },
+    "status": "SUCCESS"
+}

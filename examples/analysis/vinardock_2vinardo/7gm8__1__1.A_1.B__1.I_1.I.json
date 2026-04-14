@@ -1,0 +1,200 @@
+{
+    "model_ligands": [
+        "/home/rquiroga/Datasets/runs-n-poses-datasets/vinardo_outputs/7gm8__1__1.A_1.B__1.I/7gm8__1__1.A_1.B__1.I_1.I/1.I_dock.sdf"
+    ],
+    "reference_ligands": [
+        "/home/rquiroga/Datasets/runs-n-poses-datasets/ground_truth/7gm8__1__1.A_1.B__1.I/ligand_files/1.I.sdf"
+    ],
+    "lddt_pli": {
+        "assigned_scores": [
+            {
+                "score": 0.9996129870414734,
+                "coverage": 1.0,
+                "lddt_pli_n_contacts": 646,
+                "model_ligand": "/home/rquiroga/Datasets/runs-n-poses-datasets/vinardo_outputs/7gm8__1__1.A_1.B__1.I/7gm8__1__1.A_1.B__1.I_1.I/1.I_dock.sdf",
+                "reference_ligand": "/home/rquiroga/Datasets/runs-n-poses-datasets/ground_truth/7gm8__1__1.A_1.B__1.I/ligand_files/1.I.sdf",
+                "bs_ref_res": [
+                    "1.A.27.",
+                    "1.A.187.",
+                    "1.A.170.",
+                    "1.A.181.",
+                    "1.A.48.",
+                    "1.B.213.",
+                    "1.A.144.",
+                    "1.A.46.",
+                    "1.A.167.",
+                    "1.A.47.",
+                    "1.A.117.",
+                    "1.A.118.",
+                    "1.A.138.",
+                    "1.A.85.",
+                    "1.A.175.",
+                    "1.A.142.",
+                    "1.A.41.",
+                    "1.A.145.",
+                    "1.A.166.",
+                    "1.A.146.",
+                    "1.A.42.",
+                    "1.A.49.",
+                    "1.A.116.",
+                    "1.A.162.",
+                    "1.B.1.",
+                    "1.B.2.",
+                    "1.A.171.",
+                    "1.A.51.",
+                    "1.B.300.",
+                    "1.A.25.",
+                    "1.A.188.",
+                    "1.A.192.",
+                    "1.A.168.",
+                    "1.A.28.",
+                    "1.A.140.",
+                    "1.A.139.",
+                    "1.A.174.",
+                    "1.B.214.",
+                    "1.A.185.",
+                    "1.A.190.",
+                    "1.A.147.",
+                    "1.A.126.",
+                    "1.A.39.",
+                    "1.A.54.",
+                    "1.B.299.",
+                    "1.A.143.",
+                    "1.A.163.",
+                    "1.A.172.",
+                    "1.A.161.",
+                    "1.A.136.",
+                    "1.A.26.",
+                    "1.A.169.",
+                    "1.A.191.",
+                    "1.A.141.",
+                    "1.A.164.",
+                    "1.A.44.",
+                    "1.A.165.",
+                    "1.A.45.",
+                    "1.A.50.",
+                    "1.A.189.",
+                    "1.A.173.",
+                    "1.A.186.",
+                    "1.A.40.",
+                    "1.A.52."
+                ],
+                "bs_mdl_res": [
+                    "1.A.163.",
+                    "1.A.143.",
+                    "1.A.172.",
+                    "1.A.189.",
+                    "1.A.164.",
+                    "1.A.165.",
+                    "1.A.186.",
+                    "1.A.141.",
+                    "1.A.187.",
+                    "1.A.181.",
+                    "1.A.167.",
+                    "1.A.144.",
+                    "1.A.142.",
+                    "1.A.41.",
+                    "1.A.145.",
+                    "1.A.166.",
+                    "1.A.49.",
+                    "1.B.1.",
+                    "1.A.188.",
+                    "1.A.140.",
+                    "1.A.54."
+                ]
+            }
+        ],
+        "model_ligand_unassigned_reason": {},
+        "reference_ligand_unassigned_reason": {}
+    },
+    "rmsd": {
+        "assigned_scores": [
+            {
+                "score": 0.36852988600730896,
+                "coverage": 1.0,
+                "lddt_lp": 1.0,
+                "bb_rmsd": 1.7408229950888199e-06,
+                "model_ligand": "/home/rquiroga/Datasets/runs-n-poses-datasets/vinardo_outputs/7gm8__1__1.A_1.B__1.I/7gm8__1__1.A_1.B__1.I_1.I/1.I_dock.sdf",
+                "reference_ligand": "/home/rquiroga/Datasets/runs-n-poses-datasets/ground_truth/7gm8__1__1.A_1.B__1.I/ligand_files/1.I.sdf",
+                "chain_mapping": {
+                    "1.A": "1.A"
+                },
+                "bs_ref_res": [
+                    "1.A.41.",
+                    "1.A.49.",
+                    "1.A.140.",
+                    "1.A.141.",
+                    "1.A.142.",
+                    "1.A.144.",
+                    "1.A.145.",
+                    "1.A.163.",
+                    "1.A.164.",
+                    "1.A.165.",
+                    "1.A.166.",
+                    "1.A.187.",
+                    "1.A.189."
+                ],
+                "bs_ref_res_mapped": [
+                    "1.A.41.",
+                    "1.A.49.",
+                    "1.A.140.",
+                    "1.A.141.",
+                    "1.A.142.",
+                    "1.A.144.",
+                    "1.A.145.",
+                    "1.A.163.",
+                    "1.A.164.",
+                    "1.A.165.",
+                    "1.A.166.",
+                    "1.A.187.",
+                    "1.A.189."
+                ],
+                "bs_mdl_res_mapped": [
+                    "1.A.41.",
+                    "1.A.49.",
+                    "1.A.140.",
+                    "1.A.141.",
+                    "1.A.142.",
+                    "1.A.144.",
+                    "1.A.145.",
+                    "1.A.163.",
+                    "1.A.164.",
+                    "1.A.165.",
+                    "1.A.166.",
+                    "1.A.187.",
+                    "1.A.189."
+                ],
+                "inconsistent_residues": [],
+                "transform": [
+                    [
+                        1.0,
+                        1.4901161193847656e-08,
+                        -1.4901161193847656e-07,
+                        3.814697265625e-06
+                    ],
+                    [
+                        1.4901161193847656e-08,
+                        1.000000238418579,
+                        0.0,
+                        -2.384185791015625e-07
+                    ],
+                    [
+                        -1.1920928955078125e-07,
+                        2.2351741790771484e-08,
+                        1.0,
+                        -1.9073486328125e-06
+                    ],
+                    [
+                        0.0,
+                        0.0,
+                        0.0,
+                        1.0
+                    ]
+                ]
+            }
+        ],
+        "model_ligand_unassigned_reason": {},
+        "reference_ligand_unassigned_reason": {}
+    },
+    "status": "SUCCESS"
+}

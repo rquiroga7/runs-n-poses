@@ -1,0 +1,39 @@
+{
+    "model_ligands": [
+        "/home/rquiroga/Datasets/runs-n-poses-datasets/vinardo_outputs/8du6__1__1.B__1.D/8du6__1__1.B__1.D_1.D/1.D_dock.sdf"
+    ],
+    "reference_ligands": [
+        "/home/rquiroga/Datasets/runs-n-poses-datasets/ground_truth/8du6__1__1.B__1.D/ligand_files/1.D.sdf"
+    ],
+    "lddt_pli": {
+        "assigned_scores": [],
+        "model_ligand_unassigned_reason": {
+            "/home/rquiroga/Datasets/runs-n-poses-datasets/vinardo_outputs/8du6__1__1.B__1.D/8du6__1__1.B__1.D_1.D/1.D_dock.sdf": [
+                "identity",
+                "Ligands could not be matched (by full graph isomorphism)"
+            ]
+        },
+        "reference_ligand_unassigned_reason": {
+            "/home/rquiroga/Datasets/runs-n-poses-datasets/ground_truth/8du6__1__1.B__1.D/ligand_files/1.D.sdf": [
+                "identity",
+                "Ligands could not be matched (by full graph isomorphism)"
+            ]
+        }
+    },
+    "rmsd": {
+        "assigned_scores": [],
+        "model_ligand_unassigned_reason": {
+            "/home/rquiroga/Datasets/runs-n-poses-datasets/vinardo_outputs/8du6__1__1.B__1.D/8du6__1__1.B__1.D_1.D/1.D_dock.sdf": [
+                "identity",
+                "Ligands could not be matched (by full graph isomorphism)"
+            ]
+        },
+        "reference_ligand_unassigned_reason": {
+            "/home/rquiroga/Datasets/runs-n-poses-datasets/ground_truth/8du6__1__1.B__1.D/ligand_files/1.D.sdf": [
+                "identity",
+                "Ligands could not be matched (by full graph isomorphism)"
+            ]
+        }
+    },
+    "status": "SUCCESS"
+}

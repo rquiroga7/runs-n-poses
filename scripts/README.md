@@ -49,11 +49,13 @@ This creates PDBQT files for each ligand from the SMILES strings in annotations.
 python 03_run_vinardo.py \
     --receptor-dir /home/rquiroga/Datasets/runs-n-poses-datasets/vinardo_inputs/receptors \
     --ligand-dir /home/rquiroga/Datasets/runs-n-poses-datasets/vinardo_inputs/ligands \
-    --output-dir /home/rquiroga/Datasets/runs-n-poses-datasets/vinardo_outputs \
-    --config /home/rquiroga/github/runs-n-poses/config.fijo
+    --output-dir /home/rquiroga/Datasets/runs-n-poses-datasets/vinardo_outputs
 ```
 
-This runs `2vinardo-mar5_autobox` for each receptor-ligand pair with autoboxing enabled.
+This runs `vinardock-26-mar --scoring 2vinardo --autobox` for each receptor-ligand pair.
+No config file needed.
+
+**Note**: `vinardock-26-04` segfaults with these inputs. Use `vinardock-26-mar` instead (restored from Trash).
 
 ### Step 4: Analyze Vinardo Results
 

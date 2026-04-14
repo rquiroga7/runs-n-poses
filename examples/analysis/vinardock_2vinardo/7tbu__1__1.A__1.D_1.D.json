@@ -1,0 +1,175 @@
+{
+    "model_ligands": [
+        "/home/rquiroga/Datasets/runs-n-poses-datasets/vinardo_outputs/7tbu__1__1.A__1.D/7tbu__1__1.A__1.D_1.D/1.D_dock.sdf"
+    ],
+    "reference_ligands": [
+        "/home/rquiroga/Datasets/runs-n-poses-datasets/ground_truth/7tbu__1__1.A__1.D/ligand_files/1.D.sdf"
+    ],
+    "lddt_pli": {
+        "assigned_scores": [
+            {
+                "score": 0.17885638773441315,
+                "coverage": 1.0,
+                "lddt_pli_n_contacts": 752,
+                "model_ligand": "/home/rquiroga/Datasets/runs-n-poses-datasets/vinardo_outputs/7tbu__1__1.A__1.D/7tbu__1__1.A__1.D_1.D/1.D_dock.sdf",
+                "reference_ligand": "/home/rquiroga/Datasets/runs-n-poses-datasets/ground_truth/7tbu__1__1.A__1.D/ligand_files/1.D.sdf",
+                "bs_ref_res": [
+                    "1.A.214.",
+                    "1.A.212.",
+                    "1.A.210.",
+                    "1.A.29.",
+                    "1.A.26.",
+                    "1.A.102.",
+                    "1.A.358.",
+                    "1.A.362.",
+                    "1.A.217.",
+                    "1.A.176.",
+                    "1.A.182.",
+                    "1.A.25.",
+                    "1.A.205.",
+                    "1.A.204.",
+                    "1.A.183.",
+                    "1.A.187.",
+                    "1.A.206.",
+                    "1.A.184.",
+                    "1.A.100.",
+                    "1.A.177.",
+                    "1.A.354.",
+                    "1.A.253.",
+                    "1.A.215.",
+                    "1.A.175.",
+                    "1.A.103.",
+                    "1.A.23.",
+                    "1.A.24.",
+                    "1.A.411.",
+                    "1.A.30.",
+                    "1.A.213.",
+                    "1.A.28.",
+                    "1.A.98.",
+                    "1.A.328.",
+                    "1.A.27.",
+                    "1.A.55.",
+                    "1.A.255.",
+                    "1.A.200.",
+                    "1.A.174.",
+                    "1.A.211.",
+                    "1.A.209.",
+                    "1.A.181.",
+                    "1.A.438.",
+                    "1.A.207.",
+                    "1.A.208.",
+                    "1.A.179.",
+                    "1.A.180.",
+                    "1.A.178.",
+                    "1.A.329.",
+                    "1.A.355.",
+                    "1.A.186.",
+                    "1.A.99.",
+                    "1.A.51.",
+                    "1.A.357.",
+                    "1.A.359.",
+                    "1.A.131.",
+                    "1.A.132."
+                ],
+                "bs_mdl_res": [
+                    "1.A.282.",
+                    "1.A.329.",
+                    "1.A.355.",
+                    "1.A.207.",
+                    "1.A.208.",
+                    "1.A.326.",
+                    "1.A.210.",
+                    "1.A.284.",
+                    "1.A.327.",
+                    "1.A.325.",
+                    "1.A.358.",
+                    "1.A.281.",
+                    "1.A.354.",
+                    "1.A.330.",
+                    "1.A.206.",
+                    "1.A.411.",
+                    "1.A.213.",
+                    "1.A.328.",
+                    "1.A.255.",
+                    "1.A.324.",
+                    "1.A.209.",
+                    "1.A.283."
+                ]
+            }
+        ],
+        "model_ligand_unassigned_reason": {},
+        "reference_ligand_unassigned_reason": {}
+    },
+    "rmsd": {
+        "assigned_scores": [
+            {
+                "score": 8.031861305236816,
+                "coverage": 1.0,
+                "lddt_lp": 1.0,
+                "bb_rmsd": 2.7407028824200097e-07,
+                "model_ligand": "/home/rquiroga/Datasets/runs-n-poses-datasets/vinardo_outputs/7tbu__1__1.A__1.D/7tbu__1__1.A__1.D_1.D/1.D_dock.sdf",
+                "reference_ligand": "/home/rquiroga/Datasets/runs-n-poses-datasets/ground_truth/7tbu__1__1.A__1.D/ligand_files/1.D.sdf",
+                "chain_mapping": {
+                    "1.A": "1.A"
+                },
+                "bs_ref_res": [
+                    "1.A.25.",
+                    "1.A.29.",
+                    "1.A.178.",
+                    "1.A.179.",
+                    "1.A.180.",
+                    "1.A.207.",
+                    "1.A.210."
+                ],
+                "bs_ref_res_mapped": [
+                    "1.A.25.",
+                    "1.A.29.",
+                    "1.A.178.",
+                    "1.A.179.",
+                    "1.A.180.",
+                    "1.A.207.",
+                    "1.A.210."
+                ],
+                "bs_mdl_res_mapped": [
+                    "1.A.25.",
+                    "1.A.29.",
+                    "1.A.178.",
+                    "1.A.179.",
+                    "1.A.180.",
+                    "1.A.207.",
+                    "1.A.210."
+                ],
+                "inconsistent_residues": [],
+                "transform": [
+                    [
+                        0.9999999403953552,
+                        -5.960464477539063e-08,
+                        0.0,
+                        5.7220458984375e-06
+                    ],
+                    [
+                        -8.940696716308594e-08,
+                        0.9999999403953552,
+                        -3.725290298461914e-09,
+                        7.62939453125e-06
+                    ],
+                    [
+                        3.725290298461914e-09,
+                        1.1175870895385742e-08,
+                        0.9999998807907104,
+                        -4.76837158203125e-07
+                    ],
+                    [
+                        0.0,
+                        0.0,
+                        0.0,
+                        1.0
+                    ]
+                ]
+            }
+        ],
+        "model_ligand_unassigned_reason": {},
+        "reference_ligand_unassigned_reason": {}
+    },
+    "status": "SUCCESS"
+}

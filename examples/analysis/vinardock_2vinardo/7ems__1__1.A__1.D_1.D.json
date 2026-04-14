@@ -1,0 +1,5 @@
+{
+    "status": "FAILURE",
+    "traceback": "Traceback (most recent call last):\n  File \"/home/rquiroga/anaconda3/envs/runs_n_poses/libexec/openstructure/ost-compare-ligand-structures\", line 697, in _Main\n    reference_ligands = _LoadLigands(args.reference_ligands)\n  File \"/home/rquiroga/anaconda3/envs/runs_n_poses/libexec/openstructure/ost-compare-ligand-structures\", line 362, in _LoadLigands\n    return [_LoadLigand(lig) for lig in ligands]\n  File \"/home/rquiroga/anaconda3/envs/runs_n_poses/libexec/openstructure/ost-compare-ligand-structures\", line 362, in <listcomp>\n    return [_LoadLigand(lig) for lig in ligands]\n  File \"/home/rquiroga/anaconda3/envs/runs_n_poses/libexec/openstructure/ost-compare-ligand-structures\", line 369, in _LoadLigand\n    return ost.io.LoadEntity(file, format=\"sdf\")\nException: Bad bond line 74: Bond type number '9' not within accepted range (1-8).\n",
+    "exception": "Exception: Bad bond line 74: Bond type number '9' not within accepted range (1-8).\n"
+}

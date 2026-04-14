@@ -5,7 +5,7 @@ Step 5: Reproduce Figure 1 Panel E from the paper with vinardock results added.
 This script follows the exact same pattern as figures.ipynb:
 1. Load annotations, predictions, and posebusters results
 2. Process data with pivot_df (same as notebook)
-3. Create common_subset_dfs_all["top"] 
+3. Create common_subset_dfs_all["top"]
 4. Call plotting.make_main_figure() with vinardock included
 
 Usage:
@@ -13,6 +13,9 @@ Usage:
         --data-dir /path/to/data \
         --output /path/to/output_figure.png
 """
+
+import os
+os.environ["MPLBACKEND"] = "Agg"
 
 import argparse
 import sys
@@ -39,7 +42,23 @@ def load_data(data_dir: Path, methods: list):
     for m in methods:
         filename = data_dir / "posebusters_results" / f"{m}.csv"
         if filename.exists():
-            bust_dfs[m] = pd.read_csv(filename)
+            bust_df = pd.read_csv(filename)
+            # Rename ligand_chain -> ligand_instance_chain if needed
+            if "ligand_chain" in bust_df.columns and "ligand_instance_chain" not in bust_df.columns:
+                bust_df["ligand_instance_chain"] = bust_df["ligand_chain"]
+            # Compute pb_success from individual checks if not present
+            if "pb_success" not in bust_df.columns:
+                checks = ["sanitization", "inchi_convertible", "all_atoms_connected",
+                          "bond_lengths", "bond_angles", "internal_steric_clash",
+                          "aromatic_ring_flatness", "double_bond_flatness",
+                          "internal_energy", "protein-ligand_maximum_distance",
+                          "minimum_distance_to_protein"]
+                available = [c for c in checks if c in bust_df.columns]
+                if available:
+                    bust_df["pb_success"] = bust_df[available].all(axis=1).astype(float)
+                else:
+                    bust_df["pb_success"] = -1
+            bust_dfs[m] = bust_df
 
     # Load predictions
     full_datasets = {}
@@ -178,11 +197,6 @@ def main():
         action="store_true",
         help="Only include systems where ALL methods (including vinardo) have results",
     )
-    parser.add_argument(
-        "--no-vinardo-in-common-subset",
-        action="store_true",
-        help="Use original common subset methods but add vinardo if available (recommended)",
-    )
 
     args = parser.parse_args()
 
@@ -190,16 +204,13 @@ def main():
     output_path = Path(args.output)
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
-    # Define methods - following plotting.COMMON_SUBSET_METHODS + vinardo
-    base_methods = list(plotting.COMMON_SUBSET_METHODS)  # ["af3", "protenix", "chai", "boltz"]
-    
-    if args.no_vinardo_in_common_subset:
-        # Common subset uses original methods, but vinardo is added for visualization if available
-        all_methods = base_methods + [args.vinardo_method_name]
-        common_subset_methods = base_methods
-    else:
-        all_methods = base_methods + [args.vinardo_method_name]
-        common_subset_methods = all_methods
+    # Replace Protenix with VinardoDock in the common subset
+    base_methods = [m for m in plotting.COMMON_SUBSET_METHODS if m != "protenix"]
+    base_methods.append(args.vinardo_method_name)
+
+    # Always include all methods in the common subset
+    all_methods = base_methods
+    common_subset_methods = base_methods
 
     print(f"Loading data for methods: {all_methods}")
     print(f"Common subset methods: {common_subset_methods}")
@@ -228,11 +239,15 @@ def main():
     results_df_top = pivot_df(pd.concat(top_dfs.values()), annotated_df)
 
     # Add best/worst/average metrics (same as notebook)
-    methods_in_df = [
-        col.split("_")[1]
+    # Extract method names from pivoted column names like "lddt_pli_af3"
+    prefix = "lddt_pli_"
+    methods_in_df = list(set([
+        col[len(prefix):]
         for col in results_df_top.columns
-        if col.startswith("lddt_pli_") and col.split("_")[1] != "max" and col.split("_")[1] != "average"
-    ]
+        if col.startswith(prefix) and col[len(prefix):] not in ("max", "average")
+    ]))
+    # Sort to match the order in plotting.METHODS + vinardo
+    methods_in_df = [m for m in base_methods if m in methods_in_df]
 
     results_df_top["lddt_pli_max"] = np.nanmax(
         results_df_top[
@@ -289,6 +304,11 @@ def main():
     print(f"  Total systems (top): {results_df_top['system_id'].nunique()}")
     print(f"  Common subset systems: {common_subset_df_top['system_id'].nunique()}")
     print(f"  Methods in results: {methods_in_df}")
+
+    # Add vinardock color and shape to plotting module
+    plotting.COLORS[args.vinardo_method_name] = "#FF69B4"  # Hot pink
+    plotting.SHAPES[args.vinardo_method_name] = "^"  # Triangle
+    plotting.NAME_MAPPING[args.vinardo_method_name] = "VinardoDock"
 
     # Create figure using plotting.make_main_figure (exact same call as figures.ipynb)
     print("\nCreating figure using plotting.make_main_figure()...")

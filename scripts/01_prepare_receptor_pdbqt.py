@@ -1,14 +1,13 @@
 #!/usr/bin/env python
 """
-Step 1: Prepare receptor PDBQT files for 2vinardo-mar5.
+Step 1: Prepare receptor PDBT files for vinardock.
 
 This script takes the receptor.cif files from the ground_truth directory and converts them
-to PDBQT format using obabel-25-07 with -xc -xr flags to handle cofactors/metals.
+to PDBT format using obabel-25-07 with -d -xc -xr flags.
 
 Usage:
     python 01_prepare_receptor_pdbqt.py --ground-truth-dir /path/to/ground_truth \
-                                        --output-dir /path/to/output \
-                                        [--annotations /path/to/annotations.csv]
+                                        --output-dir /path/to/output
 """
 
 import argparse
@@ -21,27 +20,19 @@ import pandas as pd
 from tqdm import tqdm
 
 
-def find_receptor_and_cofactors(system_dir: Path, annotations_row=None) -> list:
-    """
-    Find receptor.cif and any cofactor/metal files in the system directory.
-    
-    The receptor.cif file should already contain the receptor + cofactors/metals
-    as joined into one file according to the PLAN. If there are separate cofactor
-    files, they would be in the ligand_files directory with non-proper ligands
-    (ions/artifacts).
-    """
+def find_receptor_and_cofactors(system_dir: Path) -> list:
+    """Find receptor.cif in the system directory."""
     receptor_cif = system_dir / "receptor.cif"
     if not receptor_cif.exists():
         return []
-    
     return [str(receptor_cif)]
 
 
-def convert_to_pdbqt(input_file: str, output_file: str, obabel_path: str = "obabel-25-07") -> bool:
+def convert_to_pdbt(input_file: str, output_file: str, obabel_path: str = "obabel-25-07") -> bool:
     """
-    Convert a CIF/PDB file to PDBQT format using obabel.
+    Convert a CIF/PDB file to PDBT format using obabel.
 
-    -d:   add hydrogens (with correct protonation state)
+    -h:   add hydrogens
     -xc:  remove charges
     -xr:  remove residues (keeps only organic/coordination compounds)
     """
@@ -49,7 +40,7 @@ def convert_to_pdbqt(input_file: str, output_file: str, obabel_path: str = "obab
         obabel_path,
         input_file,
         "-O", output_file,
-        "-d",   # add hydrogens
+        "-h",   # add hydrogens
         "-xc",  # remove charges
         "-xr"   # remove residues
     ]
@@ -75,7 +66,7 @@ def convert_to_pdbqt(input_file: str, output_file: str, obabel_path: str = "obab
 
 def process_system(system_id: str, ground_truth_dir: Path, output_dir: Path, 
                    obabel_path: str) -> bool:
-    """Process a single system and create its receptor PDBQT file."""
+    """Process a single system and create its receptor PDBT file."""
     system_dir = ground_truth_dir / system_id
     output_system_dir = output_dir / system_id
     output_system_dir.mkdir(parents=True, exist_ok=True)
@@ -88,15 +79,15 @@ def process_system(system_id: str, ground_truth_dir: Path, output_dir: Path,
     
     success = True
     for receptor_file in receptor_files:
-        output_file = output_system_dir / f"{system_id}_receptor.pdbqt"
-        if not convert_to_pdbqt(receptor_file, str(output_file), obabel_path):
+        output_file = output_system_dir / f"{system_id}_receptor.pdbt"
+        if not convert_to_pdbt(receptor_file, str(output_file), obabel_path):
             success = False
     
     return success
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Prepare receptor PDBQT files for 2vinardo-mar5")
+    parser = argparse.ArgumentParser(description="Prepare receptor PDBT files for vinardock")
     parser.add_argument(
         "--ground-truth-dir",
         type=str,
@@ -107,7 +98,7 @@ def main():
         "--output-dir",
         type=str,
         default="/home/rquiroga/Datasets/runs-n-poses-datasets/vinardo_inputs/receptors",
-        help="Path to output directory for PDBQT files"
+        help="Path to output directory for PDBT files"
     )
     parser.add_argument(
         "--annotations",
@@ -134,12 +125,6 @@ def main():
     output_dir = Path(args.output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
     
-    # Load annotations to identify proper ligands vs cofactors/metals
-    annotations = None
-    if os.path.exists(args.annotations):
-        annotations = pd.read_csv(args.annotations)
-    
-    # Get list of systems to process
     if args.system_id:
         system_ids = [args.system_id]
     else:

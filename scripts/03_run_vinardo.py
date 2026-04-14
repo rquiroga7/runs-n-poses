@@ -1,15 +1,14 @@
 #!/usr/bin/env python
 """
-Step 3: Run 2vinardo-mar5_autobox for each complex.
+Step 3: Run vinardock-26-04 --scoring 2vinardo for each complex.
 
-This script runs the 2vinardo-mar5_autobox executable for each system,
-using the prepared receptor and ligand PDBQT files.
+This script runs vinardock-26-04 --scoring 2vinardo --autobox for each system,
+using the prepared receptor and ligand PDBT files.
 
 Usage:
     python 03_run_vinardo.py --receptor-dir /path/to/receptors \
                              --ligand-dir /path/to/ligands \
-                             --output-dir /path/to/outputs \
-                             --config /path/to/config.fijo
+                             --output-dir /path/to/outputs
 """
 
 import argparse
@@ -22,124 +21,120 @@ import pandas as pd
 from tqdm import tqdm
 
 
-def run_vinardo(receptor_file: str, ligand_file: str, output_dir: str, 
-                config_file: str, system_id: str, ligand_chain: str,
-                executable: str = "2vinardo-mar5_autobox") -> bool:
+def run_vinardock(receptor_file: str, ligand_file: str, output_dir: str,
+                  system_id: str, ligand_chain: str,
+                  executable: str = "vinardock-26-04",
+                  threads: int = 4) -> bool:
     """
-    Run 2vinardo-mar5_autobox for a single receptor-ligand pair.
-    
-    Args:
-        receptor_file: Path to receptor PDBQT file
-        ligand_file: Path to ligand PDBQT file
-        output_dir: Directory to save output files
-        config_file: Path to config.fijo file
-        system_id: System ID for naming output
-        ligand_chain: Ligand chain identifier
-        executable: Path to 2vinardo-mar5_autobox executable
+    Run vinardock-26-04 --scoring 2vinardo --autobox for a single receptor-ligand pair.
     """
-    # Create output subdirectory for this system
     system_output_dir = Path(output_dir) / system_id
     system_output_dir.mkdir(parents=True, exist_ok=True)
-    
-    # Output file name
-    output_file = system_output_dir / f"{system_id}_{ligand_chain}_output.pdbqt"
-    
+
+    out_folder = system_output_dir / f"{system_id}_{ligand_chain}"
+    out_folder.mkdir(exist_ok=True)
+
     cmd = [
         executable,
+        "--scoring", "2vinardo",
         "--receptor", receptor_file,
         "--ligand", ligand_file,
-        "--config", config_file,
-        "--out", str(output_file)
+        "--out", str(out_folder),
+        "--autobox",
+        "--threads", str(threads)
     ]
-    
+
     try:
         result = subprocess.run(
             cmd,
             capture_output=True,
             text=True,
-            timeout=600,  # 10 minutes timeout
+            timeout=600,
             cwd=str(system_output_dir)
         )
-        
+
         if result.returncode != 0:
-            print(f"Warning: 2vinardo-mar5 failed for {system_id} {ligand_chain}:")
+            print(f"Warning: vinardock failed for {system_id} {ligand_chain}:")
             print(f"  stderr: {result.stderr[:500]}")
             return False
-        
-        # Check if output file was created
-        if not output_file.exists() or output_file.stat().st_size == 0:
-            print(f"Warning: No output file created for {system_id} {ligand_chain}")
-            return False
-        
-        return True
-        
+
+        # Check if output files were created
+        output_files = list(out_folder.glob("*.pdbt")) + list(out_folder.glob("*.pdb"))
+        # Also check if log.csv has content
+        log_file = out_folder / "log.csv"
+        if log_file.exists() and log_file.stat().st_size > 50:
+            return True
+        if output_files and any(f.stat().st_size > 0 for f in output_files):
+            return True
+
+        print(f"Warning: No output files created for {system_id} {ligand_chain}")
+        return False
+
     except subprocess.TimeoutExpired:
-        print(f"Warning: 2vinardo-mar5 timed out for {system_id} {ligand_chain}")
+        print(f"Warning: vinardock timed out for {system_id} {ligand_chain}")
         return False
     except Exception as e:
-        print(f"Error running 2vinardo-mar5 for {system_id} {ligand_chain}: {e}")
+        print(f"Error running vinardock for {system_id} {ligand_chain}: {e}")
         return False
 
 
 def process_system(system_id: str, receptor_dir: Path, ligand_dir: Path,
-                   output_dir: Path, config_file: str, executable: str) -> bool:
-    """
-    Process a single system by running 2vinardo-mar5 for all its ligands.
-    """
-    receptor_file = receptor_dir / system_id / f"{system_id}_receptor.pdbqt"
-    ligand_dir_system = ligand_dir / system_id
-    
+                   output_dir: Path, executable: str,
+                   threads: int = 4) -> bool:
+    """Process a single system by running vinardock for all its ligands."""
+    receptor_file = receptor_dir / system_id / f"{system_id}_receptor.pdbt"
     if not receptor_file.exists():
-        print(f"Warning: Receptor file not found for {system_id}")
-        return False
-    
+        candidates = list((receptor_dir / system_id).glob("*receptor*"))
+        if candidates:
+            receptor_file = candidates[0]
+        else:
+            print(f"Warning: Receptor file not found for {system_id}")
+            return False
+
+    ligand_dir_system = ligand_dir / system_id
     if not ligand_dir_system.exists():
         print(f"Warning: Ligand directory not found for {system_id}")
         return False
-    
-    # Get all ligand PDBQT files for this system
-    ligand_files = list(ligand_dir_system.glob("*.pdbqt"))
-    
+
+    ligand_files = list(ligand_dir_system.glob("*.pdbt"))
     if not ligand_files:
         print(f"Warning: No ligand files found for {system_id}")
         return False
-    
+
     success = False
-    
     for ligand_file in ligand_files:
-        ligand_chain = ligand_file.stem  # e.g., "1.B"
-        
-        print(f"Running 2vinardo-mar5 for {system_id}, ligand {ligand_chain}...")
-        
-        if run_vinardo(
+        ligand_chain = ligand_file.stem
+        print(f"Running vinardock for {system_id}, ligand {ligand_chain}...")
+
+        if run_vinardock(
             str(receptor_file),
             str(ligand_file),
             str(output_dir),
-            config_file,
             system_id,
             ligand_chain,
-            executable
+            executable,
+            threads
         ):
             success = True
         else:
             print(f"  Failed for ligand {ligand_chain}")
-    
+
     return success
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Run 2vinardo-mar5_autobox for each complex")
+    parser = argparse.ArgumentParser(description="Run vinardock-26-04 --scoring 2vinardo for each complex")
     parser.add_argument(
         "--receptor-dir",
         type=str,
         default="/home/rquiroga/Datasets/runs-n-poses-datasets/vinardo_inputs/receptors",
-        help="Path to directory containing receptor PDBQT files"
+        help="Path to directory containing receptor PDBT files"
     )
     parser.add_argument(
         "--ligand-dir",
         type=str,
         default="/home/rquiroga/Datasets/runs-n-poses-datasets/vinardo_inputs/ligands",
-        help="Path to directory containing ligand PDBQT files"
+        help="Path to directory containing ligand PDBT files"
     )
     parser.add_argument(
         "--output-dir",
@@ -148,16 +143,10 @@ def main():
         help="Path to output directory for docking results"
     )
     parser.add_argument(
-        "--config",
-        type=str,
-        default="/home/rquiroga/github/runs-n-poses/config.fijo",
-        help="Path to config.fijo file"
-    )
-    parser.add_argument(
         "--executable",
         type=str,
-        default="2vinardo-mar5_autobox",
-        help="Path to 2vinardo-mar5_autobox executable"
+        default="/home/rquiroga/.local/bin/vinardock-26-mar",
+        help="Path to vinardock executable"
     )
     parser.add_argument(
         "--system-id",
@@ -168,18 +157,23 @@ def main():
     parser.add_argument(
         "--annotations",
         type=str,
-        default="/home/rquiroga/Datasets/runs-n-Poses/annotations.csv",
-        help="Path to annotations.csv file (to determine which ligands to process)"
+        default="/home/rquiroga/Datasets/runs-n-poses-datasets/annotations.csv",
+        help="Path to annotations.csv file"
     )
-    
+    parser.add_argument(
+        "--threads",
+        type=int,
+        default=4,
+        help="Number of threads per docking job"
+    )
+
     args = parser.parse_args()
-    
+
     receptor_dir = Path(args.receptor_dir)
     ligand_dir = Path(args.ligand_dir)
     output_dir = Path(args.output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
-    
-    # Load annotations to get list of systems
+
     if os.path.exists(args.annotations):
         annotations = pd.read_csv(args.annotations)
         if args.system_id:
@@ -187,29 +181,28 @@ def main():
         else:
             system_ids = sorted(annotations["system_id"].unique())
     else:
-        # Use directories instead
         system_ids = sorted([d.name for d in receptor_dir.iterdir() if d.is_dir()])
         if args.system_id:
             system_ids = [s for s in system_ids if s == args.system_id]
-    
+
     print(f"Processing {len(system_ids)} systems...")
-    
+
     success_count = 0
     fail_count = 0
-    
-    for system_id in tqdm(system_ids, desc="Running 2vinardo-mar5"):
+
+    for system_id in tqdm(system_ids, desc="Running vinardock"):
         if process_system(
             system_id,
             receptor_dir,
             ligand_dir,
             output_dir,
-            args.config,
-            args.executable
+            args.executable,
+            args.threads
         ):
             success_count += 1
         else:
             fail_count += 1
-    
+
     print(f"\nDone! Success: {success_count}, Failed: {fail_count}")
     print(f"Output directory: {output_dir}")
 

@@ -1,25 +1,23 @@
 #!/usr/bin/env python
 """
-Step 4: Analyze vinardo results and output in the same format as the predictions folder.
+Step 4: Analyze vinardo docking results using ost (same as original pipeline).
 
-This script takes the 2vinardo-mar5 output files and:
-1. Scores the predicted poses against ground truth using ost compare-ligand-structures
-2. Extracts accuracy metrics (lddt_pli, rmsd, lddt_lp, bb_rmsd, pred_pocket_f1)
-3. Outputs a CSV file in the same format as the other prediction methods
-
-The output will be named vinardock_2vinardo.csv and placed in the predictions directory.
+For each successfully docked system:
+1. Convert PDBT→SDF for the docked ligand
+2. Run ost compare-ligand-structures with -ml flag:
+   - Model: ground truth receptor + docked ligand SDF (-ml)
+   - Reference: ground truth receptor + ground truth ligand SDF (-rl)
+3. Run PoseBusters for validation checks
+4. Extract lddt_pli, rmsd, lddt_lp, bb_rmsd metrics
+5. Output CSV in same format as other prediction methods
 
 Usage:
-    python 04_analyze_vinardo.py --vinardo-outputs /path/to/vinardo_outputs \
-                                 --ground-truth /path/to/ground_truth \
-                                 --annotations /path/to/annotations.csv \
-                                 --output /path/to/output/vinardock_2vinardo.csv
+    python 04_analyze_vinardo.py [--start-index N] [--max-systems N] [--skip-posebusters]
 """
 
 import argparse
 import json
 import os
-import re
 import subprocess
 import sys
 from pathlib import Path
@@ -27,341 +25,323 @@ from pathlib import Path
 import pandas as pd
 from tqdm import tqdm
 
+GT_DIR = Path("/home/rquiroga/Datasets/runs-n-poses-datasets/ground_truth")
+OUTPUT_DIR = Path("/home/rquiroga/Datasets/runs-n-poses-datasets/vinardo_outputs")
+ANALYSIS_DIR = Path("/home/rquiroga/github/runs-n-poses/examples/analysis/vinardock_2vinardo")
+ANNOTATIONS = Path("/home/rquiroga/Datasets/runs-n-poses-datasets/annotations.csv")
+OUTPUT_CSV = Path("/home/rquiroga/Datasets/runs-n-poses-datasets/predictions/vinardock_2vinardo.csv")
+POSEBUSTERS_CSV = Path("/home/rquiroga/Datasets/runs-n-poses-datasets/posebusters_results/vinardock_2vinardo.csv")
 
-def run_ost_comparison(vinardo_output: str, ground_truth_sdf: str, 
-                       receptor_cif: str, output_json: str) -> bool:
+# Tools
+OST = "/home/rquiroga/anaconda3/envs/runs_n_poses/bin/ost"
+PB_VENV_PYTHON = "/home/rquiroga/Datasets/Posebusters/venv/bin/python"
+
+
+def convert_pdbt_to_sdf(pdbt_file: str, sdf_file: str) -> bool:
+    """Convert PDBT to SDF using obabel."""
+    try:
+        r = subprocess.run(
+            ["obabel-25-07", pdbt_file, "-O", sdf_file],
+            capture_output=True, text=True, timeout=30
+        )
+        return r.returncode == 0 and os.path.exists(sdf_file) and os.path.getsize(sdf_file) > 100
+    except Exception:
+        return False
+
+
+def run_ost_comparison(receptor_cif: str, docked_sdf: str, gt_sdf: str, output_json: str) -> bool:
     """
-    Run ost compare-ligand-structures to score the vinardo output.
+    Run ost compare-ligand-structures.
     
-    This uses the same tool as the other methods (AF3, Boltz, etc.) to ensure
-    comparable metrics.
+    Uses the same receptor for both model and reference since we're only
+    comparing ligand poses. The docked ligand is provided via -ml flag.
     """
     cmd = [
-        "ost",
-        "compare-ligand-structures",
-        "-m", vinardo_output,
-        "-rl", ground_truth_sdf,
+        OST, "compare-ligand-structures",
+        "-m", receptor_cif,
+        "-ml", docked_sdf,
         "-r", receptor_cif,
+        "-rl", gt_sdf,
         "-o", output_json,
         "--lddt-pli", "--rmsd", "--lddt-pli-amc"
     ]
-    
     try:
-        result = subprocess.run(
-            cmd,
-            capture_output=True,
-            text=True,
-            timeout=120
-        )
-        
-        if result.returncode != 0:
-            print(f"Warning: ost compare failed for {vinardo_output}:")
-            print(f"  stderr: {result.stderr[:300]}")
-            return False
-        
-        return os.path.exists(output_json)
-        
-    except subprocess.TimeoutExpired:
-        print(f"Warning: ost compare timed out for {vinardo_output}")
-        return False
-    except Exception as e:
-        print(f"Error running ost compare for {vinardo_output}: {e}")
+        r = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
+        return r.returncode == 0 and os.path.exists(output_json)
+    except Exception:
         return False
 
 
-def extract_metrics_from_json(json_file: str, system_id: str, ligand_chain: str,
-                               annotations_row: dict) -> dict:
-    """
-    Extract metrics from the ost compare-ligand-structures JSON output.
-    
-    Returns a dictionary with the same columns as the prediction CSV files.
-    """
+def extract_metrics_from_ost(json_file: str, system_id: str, ligand_chain: str,
+                              annotations_row: dict, vinardo_score: float) -> dict:
+    """Extract metrics from ost analysis JSON."""
     try:
         with open(json_file) as f:
             result = json.load(f)
-    except Exception as e:
-        print(f"Error reading JSON {json_file}: {e}")
+    except Exception:
         return None
-    
-    # Initialize result dictionary with required columns
+
+    if result.get("status") != "SUCCESS":
+        return None
+
     metrics = {
         "target": system_id,
         "method": "vinardock_2vinardo",
-        "seed": 1,  # Vinardo doesn't use seeds
-        "sample": 1,  # Single sample
-        "ranking_score": None,  # Vinardo scoring
+        "seed": 1,
+        "sample": 1,
+        "ranking_score": vinardo_score,
         "ligand_instance_chain": ligand_chain,
         "ligand_is_proper": annotations_row.get("ligand_is_proper", True),
+        "model_ligand_ccd_code": annotations_row.get("ligand_ccd_code", ""),
+        "model_ligand_smiles": annotations_row.get("ligand_smiles", ""),
+        "ligand_ccd_code": annotations_row.get("ligand_ccd_code", ""),
+        "model_ligand_chain_lddt_pli": "A",
+        "model_ligand_chain_rmsd": "A",
     }
-    
-    # Extract lddt_pli metrics
+
+    # Extract lddt_pli
     if "lddt_pli" in result and "assigned_scores" in result["lddt_pli"]:
         for item in result["lddt_pli"]["assigned_scores"]:
-            if item.get("reference_ligand") and ligand_chain in item.get("reference_ligand", ""):
-                metrics["lddt_pli"] = item.get("score")
-                metrics["model_ligand_chain_lddt_pli"] = item.get("model_ligand", "").split(".")[0]
-                break
-    
-    # Extract RMSD metrics
+            metrics["lddt_pli"] = item.get("score")
+            break
+
+    # Extract rmsd
     if "rmsd" in result and "assigned_scores" in result["rmsd"]:
         for item in result["rmsd"]["assigned_scores"]:
-            if item.get("reference_ligand") and ligand_chain in item.get("reference_ligand", ""):
-                metrics["rmsd"] = item.get("score")
-                metrics["lddt_lp"] = item.get("lddt_lp")
-                metrics["bb_rmsd"] = item.get("bb_rmsd")
-                metrics["model_ligand_chain_rmsd"] = item.get("model_ligand", "").split(".")[0]
-                break
-    
-    # Add ligand information from annotations
-    metrics["model_ligand_ccd_code"] = annotations_row.get("ligand_ccd_code", "")
-    metrics["model_ligand_smiles"] = annotations_row.get("ligand_smiles", "")
-    metrics["ligand_ccd_code"] = annotations_row.get("ligand_ccd_code", "")
-    
-    # iPTM scores - not applicable for vinardo, set to None
+            metrics["rmsd"] = item.get("score")
+            metrics["lddt_lp"] = item.get("lddt_lp")
+            metrics["bb_rmsd"] = item.get("bb_rmsd")
+            break
+
+    # iPTM scores - not applicable for docking
     for col in [
-        "prot_lig_chain_iptm_average_lddt_pli",
-        "prot_lig_chain_iptm_min_lddt_pli",
-        "prot_lig_chain_iptm_max_lddt_pli",
-        "lig_prot_chain_iptm_average_lddt_pli",
-        "lig_prot_chain_iptm_min_lddt_pli",
-        "lig_prot_chain_iptm_max_lddt_pli",
-        "prot_lig_chain_iptm_average_rmsd",
-        "prot_lig_chain_iptm_min_rmsd",
-        "prot_lig_chain_iptm_max_rmsd",
-        "lig_prot_chain_iptm_average_rmsd",
-        "lig_prot_chain_iptm_min_rmsd",
-        "lig_prot_chain_iptm_max_rmsd",
+        "prot_lig_chain_iptm_average_lddt_pli", "prot_lig_chain_iptm_min_lddt_pli",
+        "prot_lig_chain_iptm_max_lddt_pli", "lig_prot_chain_iptm_average_lddt_pli",
+        "lig_prot_chain_iptm_min_lddt_pli", "lig_prot_chain_iptm_max_lddt_pli",
+        "prot_lig_chain_iptm_average_rmsd", "prot_lig_chain_iptm_min_rmsd",
+        "prot_lig_chain_iptm_max_rmsd", "lig_prot_chain_iptm_average_rmsd",
+        "lig_prot_chain_iptm_min_rmsd", "lig_prot_chain_iptm_max_rmsd",
     ]:
         metrics[col] = None
-    
-    # Pocket prediction metrics - not applicable for vinardo
+
     metrics["pred_pocket_tp"] = None
     metrics["pred_pocket_fp"] = None
     metrics["pred_pocket_fn"] = None
     metrics["pred_pocket_precision"] = None
     metrics["pred_pocket_recall"] = None
     metrics["pred_pocket_f1"] = None
-    
+
     return metrics
 
 
-def extract_vinardo_score(output_file: str) -> float:
-    """
-    Extract the ranking score from vinardo output.
+def run_posebusters(model_sdf: str, gt_sdf: str, receptor_cif: str) -> dict:
+    """Run PoseBusters on a single docking result.
     
-    The vinardo output file contains the docking score.
+    Converts receptor CIF to PDB since PoseBusters can't read CIF.
+    Uses config='redock' to match the AF3 test setup.
     """
     try:
-        with open(output_file) as f:
-            content = f.read()
+        # Convert receptor CIF to PDB for PoseBusters
+        receptor_pdb = receptor_cif.rsplit(".", 1)[0] + ".pdb"
+        subprocess.run(
+            ["obabel-25-07", receptor_cif, "-O", receptor_pdb],
+            capture_output=True, text=True, timeout=30
+        )
         
-        # Look for REMARK lines with scores
-        for line in content.split("\n"):
-            if line.startswith("REMARK VINA RESULT"):
-                # Format: REMARK VINA RESULT:   -9.2     0.000     0.000
-                parts = line.split(":")
-                if len(parts) > 1:
-                    scores = parts[1].strip().split()
-                    if scores:
-                        return float(scores[0])
+        cmd = [
+            PB_VENV_PYTHON, "-c",
+            f"""
+import json
+from posebusters import PoseBusters
+bust = PoseBusters(config="redock")
+results = bust.bust(
+    mol_pred="{model_sdf}",
+    mol_true="{gt_sdf}",
+    mol_cond="{receptor_pdb}",
+)
+# Compute pb_success from check columns (matching the paper's criteria)
+checks = [
+    'sanitization', 'inchi_convertible', 'all_atoms_connected',
+    'bond_lengths', 'bond_angles', 'internal_steric_clash',
+    'aromatic_ring_flatness', 'double_bond_flatness',
+    'internal_energy', 'protein-ligand_maximum_distance',
+    'minimum_distance_to_protein'
+]
+available = [c for c in checks if c in results.columns]
+results['pb_success'] = results[available].all(axis=1)
+print(results.to_json(orient="records"))
+"""
+        ]
+        r = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
+        if r.returncode == 0 and r.stdout.strip():
+            results_list = json.loads(r.stdout.strip())
+            if results_list:
+                return results_list[0]
     except Exception:
         pass
-    
-    return None
+    return {"pb_success": False}
 
 
-def process_system_output(system_id: str, ligand_chain: str, 
-                          vinardo_output_dir: Path, ground_truth_dir: Path,
-                          annotations: pd.DataFrame, analysis_output_dir: Path) -> dict:
-    """
-    Process a single vinardo output and extract metrics.
-    """
-    # Get vinardo output file
-    vinardo_output_file = vinardo_output_dir / system_id / f"{system_id}_{ligand_chain}_output.pdbqt"
-    
-    if not vinardo_output_file.exists():
-        print(f"Warning: Vinardo output not found for {system_id} {ligand_chain}")
-        return None
-    
-    # Get ground truth files
-    system_gt_dir = ground_truth_dir / system_id
-    ground_truth_sdf = system_gt_dir / "ligand_files" / f"{ligand_chain}.sdf"
-    receptor_cif = system_gt_dir / "receptor.cif"
-    
-    if not ground_truth_sdf.exists():
-        print(f"Warning: Ground truth SDF not found for {system_id} {ligand_chain}")
-        return None
-    
+def analyze_system(system_id: str, annotations: pd.DataFrame, run_posebusters_flag: bool = True) -> list:
+    """Analyze all ligands for a system."""
+    system_annot = annotations[annotations["system_id"] == system_id]
+    if system_annot.empty:
+        return []
+
+    results = []
+    system_out = OUTPUT_DIR / system_id
+    if not system_out.exists():
+        return []
+
+    receptor_cif = GT_DIR / system_id / "receptor.cif"
     if not receptor_cif.exists():
-        print(f"Warning: Receptor CIF not found for {system_id}")
-        return None
-    
-    # Get annotation row for this system
-    system_annotations = annotations[
-        (annotations["system_id"] == system_id) & 
-        (annotations["ligand_instance_chain"] == ligand_chain)
-    ]
-    
-    if system_annotations.empty:
-        print(f"Warning: No annotations for {system_id} {ligand_chain}")
-        return None
-    
-    annotations_row = system_annotations.iloc[0].to_dict()
-    
-    # Run ost comparison
-    analysis_output_dir.mkdir(parents=True, exist_ok=True)
-    output_json = analysis_output_dir / f"{system_id}_{ligand_chain}.json"
-    
-    if not run_ost_comparison(
-        str(vinardo_output_file),
-        str(ground_truth_sdf),
-        str(receptor_cif),
-        str(output_json)
-    ):
-        return None
-    
-    # Extract metrics
-    metrics = extract_metrics_from_json(
-        str(output_json),
-        system_id,
-        ligand_chain,
-        annotations_row
-    )
-    
-    # Add vinardo scoring as ranking_score
-    if metrics:
-        metrics["ranking_score"] = extract_vinardo_score(str(vinardo_output_file))
-    
-    return metrics
+        return []
+
+    for lig_dir in sorted(system_out.iterdir()):
+        if not lig_dir.is_dir():
+            continue
+
+        parts = lig_dir.name.split("_")
+        if len(parts) < 2:
+            continue
+        chain = parts[-1]
+
+        # Check if docking succeeded
+        log_file = lig_dir / "log.csv"
+        if not log_file.exists() or log_file.stat().st_size < 50:
+            continue
+
+        # Extract vinardo score
+        vinardo_score = None
+        try:
+            log_lines = log_file.read_text().strip().split("\n")
+            if len(log_lines) >= 2:
+                parts_log = log_lines[1].split(",")
+                if len(parts_log) >= 3:
+                    vinardo_score = float(parts_log[2])
+        except Exception:
+            pass
+
+        # Find output PDBT
+        pdbt_files = [f for f in lig_dir.glob("*.pdbt") if f.stat().st_size > 100]
+        if not pdbt_files:
+            continue
+        vinardo_pdbt = pdbt_files[0]
+
+        # Convert PDBT to SDF for ost -ml
+        docked_sdf = lig_dir / f"{chain}_dock.sdf"
+        if not docked_sdf.exists() or docked_sdf.stat().st_size < 100:
+            if not convert_pdbt_to_sdf(str(vinardo_pdbt), str(docked_sdf)):
+                continue
+
+        # Ground truth ligand
+        gt_sdf = GT_DIR / system_id / "ligand_files" / f"{chain}.sdf"
+        if not gt_sdf.exists():
+            continue
+
+        # Run ost comparison (ligand-only comparison against ground truth)
+        ANALYSIS_DIR.mkdir(parents=True, exist_ok=True)
+        json_file = ANALYSIS_DIR / f"{system_id}_{chain}.json"
+
+        if not json_file.exists():
+            if not run_ost_comparison(str(receptor_cif), str(docked_sdf), str(gt_sdf), str(json_file)):
+                continue
+
+        # Extract metrics
+        annot_row = system_annot[system_annot["ligand_instance_chain"] == chain]
+        if annot_row.empty:
+            continue
+
+        metrics = extract_metrics_from_ost(str(json_file), system_id, chain,
+                                           annot_row.iloc[0].to_dict(), vinardo_score)
+        if metrics:
+            # Run PoseBusters
+            if run_posebusters_flag:
+                pb_results = run_posebusters(str(docked_sdf), str(gt_sdf), str(receptor_cif))
+                metrics["pb_success"] = 1.0 if pb_results.get("pb_success", False) else 0.0
+            else:
+                metrics["pb_success"] = -1.0
+            results.append(metrics)
+
+    return results
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Analyze vinardo results and output in predictions format")
-    parser.add_argument(
-        "--vinardo-outputs",
-        type=str,
-        default="/home/rquiroga/Datasets/runs-n-poses-datasets/vinardo_outputs",
-        help="Path to vinardo outputs directory"
-    )
-    parser.add_argument(
-        "--ground-truth",
-        type=str,
-        default="/home/rquiroga/Datasets/runs-n-poses-datasets/ground_truth",
-        help="Path to ground_truth directory"
-    )
-    parser.add_argument(
-        "--annotations",
-        type=str,
-        default="/home/rquiroga/Datasets/runs-n-poses-datasets/annotations.csv",
-        help="Path to annotations.csv file"
-    )
-    parser.add_argument(
-        "--inputs-json",
-        type=str,
-        default="/home/rquiroga/Datasets/runs-n-poses-datasets/inputs.json",
-        help="Path to inputs.json file"
-    )
-    parser.add_argument(
-        "--output",
-        type=str,
-        default="/home/rquiroga/Datasets/runs-n-poses-datasets/predictions/vinardock_2vinardo.csv",
-        help="Path to output CSV file"
-    )
-    parser.add_argument(
-        "--analysis-dir",
-        type=str,
-        default="/home/rquiroga/github/runs-n-poses/examples/analysis/vinardock_2vinardo",
-        help="Path to store intermediate analysis JSON files (follows examples/analysis/ pattern)"
-    )
-    parser.add_argument(
-        "--system-id",
-        type=str,
-        default=None,
-        help="Process only a specific system ID (optional)"
-    )
-    
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--system-list", type=str,
+                        default="/home/rquiroga/github/runs-n-poses/scripts/single_ligand_systems.txt")
+    parser.add_argument("--start-index", type=int, default=0)
+    parser.add_argument("--max-systems", type=int, default=None)
+    parser.add_argument("--skip-posebusters", action="store_true",
+                        help="Skip PoseBusters checks")
+    parser.add_argument("--resume", action="store_true",
+                        help="Resume from existing output CSV and skip already processed systems")
     args = parser.parse_args()
 
-    # Load annotations
-    if not os.path.exists(args.annotations):
-        print(f"Error: Annotations file not found: {args.annotations}")
-        sys.exit(1)
+    with open(args.system_list) as f:
+        system_ids = [l.strip() for l in f if l.strip()]
+    system_ids = system_ids[args.start_index:]
+    if args.max_systems:
+        system_ids = system_ids[:args.max_systems]
 
-    annotations = pd.read_csv(args.annotations)
+    annotations = pd.read_csv(ANNOTATIONS)
+    run_pb = not args.skip_posebusters
+    resume = args.resume
 
-    # Load inputs.json (following the pattern from extract_scores.ipynb)
-    if not os.path.exists(args.inputs_json):
-        print(f"Warning: inputs.json not found at {args.inputs_json}")
-        input_data = {}
-    else:
-        with open(args.inputs_json, 'r') as f:
-            input_data = json.load(f)
-        print(f"Loaded inputs.json with {len(input_data)} systems")
+    print(f"Analyzing {len(system_ids)} systems (posebusters={'ON' if run_pb else 'OFF'})...")
 
-    vinardo_outputs_dir = Path(args.vinardo_outputs)
-    ground_truth_dir = Path(args.ground_truth)
-    analysis_output_dir = Path(args.analysis_dir)
-    analysis_output_dir.mkdir(parents=True, exist_ok=True)
-    
-    # Get list of systems to process
-    if args.system_id:
-        system_ids = [args.system_id]
+    # If resuming, read existing output CSV to find already processed systems
+    processed_targets = set()
+    if resume and OUTPUT_CSV.exists():
+        try:
+            existing = pd.read_csv(OUTPUT_CSV)
+            if 'target' in existing.columns:
+                processed_targets = set(existing['target'].astype(str).unique())
+        except Exception:
+            processed_targets = set()
+
+    OUTPUT_CSV.parent.mkdir(parents=True, exist_ok=True)
+
+    total_metrics = 0
+    for sid in tqdm(system_ids, desc="Analyzing"):
+        if resume and sid in processed_targets:
+            tqdm.write(f"Skipping {sid} (already present in {OUTPUT_CSV})")
+            continue
+
+        metrics = analyze_system(sid, annotations, run_posebusters_flag=run_pb)
+        if not metrics:
+            continue
+
+        # Append per-system results to CSV to save progress incrementally
+        df_sys = pd.DataFrame(metrics)
+        write_header = not OUTPUT_CSV.exists()
+        try:
+            df_sys.to_csv(OUTPUT_CSV, index=False, header=write_header, mode='a')
+        except Exception:
+            # fallback: try writing normally
+            df_sys.to_csv(OUTPUT_CSV, index=False)
+
+        total_metrics += len(df_sys)
+        processed_targets.add(sid)
+
+    if total_metrics > 0:
+        df_final = pd.read_csv(OUTPUT_CSV)
+        print(f"\nResults saved to: {OUTPUT_CSV}")
+        print(f"  Total predictions: {len(df_final)}")
+        print(f"  Unique systems: {df_final['target'].nunique()}")
+        if "lddt_pli" in df_final.columns:
+            valid = df_final['lddt_pli'].dropna()
+            if len(valid) > 0:
+                print(f"  Mean LDDT-PLI: {valid.mean():.3f}")
+        if "rmsd" in df_final.columns:
+            valid = df_final['rmsd'].dropna()
+            if len(valid) > 0:
+                print(f"  Mean RMSD: {valid.mean():.3f}")
+        if "pb_success" in df_final.columns:
+            pb_ok = (df_final['pb_success'] == 1).sum()
+            print(f"  PoseBusters pass: {pb_ok}/{len(df_final)} ({100*pb_ok/len(df_final):.1f}%)")
     else:
-        # Get unique system-ligand pairs from annotations
-        system_ligand_pairs = annotations[["system_id", "ligand_instance_chain"]].drop_duplicates()
-        system_ids = sorted(system_ligand_pairs["system_id"].unique())
-    
-    print(f"Processing {len(system_ids)} systems...")
-    
-    all_metrics = []
-    success_count = 0
-    fail_count = 0
-    
-    for system_id in tqdm(system_ids, desc="Analyzing vinardo outputs"):
-        # Get all ligand chains for this system
-        system_ligands = annotations[
-            annotations["system_id"] == system_id
-        ]["ligand_instance_chain"].unique()
-        
-        for ligand_chain in system_ligands:
-            metrics = process_system_output(
-                system_id,
-                ligand_chain,
-                vinardo_outputs_dir,
-                ground_truth_dir,
-                annotations,
-                analysis_output_dir
-            )
-            
-            if metrics:
-                all_metrics.append(metrics)
-                success_count += 1
-            else:
-                fail_count += 1
-    
-    # Create output DataFrame
-    if all_metrics:
-        results_df = pd.DataFrame(all_metrics)
-        
-        # Ensure output directory exists
-        output_path = Path(args.output)
-        output_path.parent.mkdir(parents=True, exist_ok=True)
-        
-        # Save to CSV
-        results_df.to_csv(output_path, index=False)
-        
-        print(f"\nDone! Success: {success_count}, Failed: {fail_count}")
-        print(f"Results saved to: {output_path}")
-        print(f"\nSummary:")
-        print(f"  Total systems: {results_df['target'].nunique()}")
-        print(f"  Total predictions: {len(results_df)}")
-        if "lddt_pli" in results_df.columns:
-            print(f"  Mean LDDT-PLI: {results_df['lddt_pli'].mean():.3f}")
-        if "rmsd" in results_df.columns:
-            print(f"  Mean RMSD: {results_df['rmsd'].mean():.3f}")
-    else:
-        print(f"\nWarning: No metrics extracted. Output file not created.")
-        print(f"Success: {success_count}, Failed: {fail_count}")
+        print("No new metrics extracted.")
 
 
 if __name__ == "__main__":

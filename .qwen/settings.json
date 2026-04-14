@@ -5,7 +5,12 @@
       "Bash(find *)",
       "Bash(ls *)",
       "Bash(conda *)",
-      "Bash(which *)"
+      "Bash(which *)",
+      "Bash(obabel-25-07 *)",
+      "Bash(vinardock-26-04 *)",
+      "Bash(cp *)",
+      "Bash(chmod *)",
+      "Bash(python *)"
     ]
   },
   "$version": 3

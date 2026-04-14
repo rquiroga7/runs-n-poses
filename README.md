@@ -187,8 +187,8 @@ All necesary dataset files are in the runs-n-poses-datasets folder
 
 ## PLAN: We need to run 2vinardo-mar5 (executable in path), and analyze the results
 1- Use obabel-25-07 to first create pdbqt files for the receptor + any cofactors/metals joined into one file, prepare using -d (add hydrogens) and with -xc and -xr flags
-2- Use obabel-25-07 to create pdbqt files for the ligand explicited in the annotations.csv in the ligand_instance_chain column (run obabel-25-07 with -d but without -xc and -xr to prepare ligand)
-3- Create a script that will run 2vinardo-mar5_autobox for each complex, adding the corresponding ligand as a flag with --ligand and receptor with --receptor (the pdbqt files created in step 1 and 2), and also with --config config.fijo
+2- Use obabel-25-07 to create pdbt files for the ligand explicited in the annotations.csv in the ligand_instance_chain column (run obabel-25-07 with -d but without -xc and -xr to prepare ligand)
+3- Create a script that will run 2vinardo-mar5_autobox for each complex, adding the corresponding ligand as a flag with --ligand and receptor with --receptor (the pdbt files created in step 1 and 2), and also with --config config.fijo
 4- Write a script that uses the runs-n-poses tools to analyze the results and output them in the same format as the files in the predictions folder, lets call it vinardock_2vinardo.
 5- Write a script to reproduce Figure 1 Panel E, from the "Have protein-ligand cofolding methods moved
 beyond memorisation?" paper, but adding vinardock results columns.
@@ -199,3 +199,5 @@ beyond memorisation?" paper, but adding vinardock results columns.
 
 The original `environment.yaml` had unsolvable conflicts between `openstructure`, `boost`, and `rdkit` in conda's solver. **This is now fixed.** The `environment.yaml` file has been updated with step-by-step installation instructions, and a pre-solved `environment.working.yaml` is also provided. See the [Installation](#installation) section above.
 
+## Single ligand benchmark
+We will run on the 1426 systems with a single ligand.
