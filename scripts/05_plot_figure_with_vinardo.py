@@ -127,6 +127,8 @@ def load_data(data_dir: Path, methods: list):
             .head(1)
             .reset_index(drop=True)
         )
+        # Merge PoseBusters results if available. If not, try to fallback
+        # to the `pb_success` column inside the predictions CSV itself.
         if method in bust_dfs:
             full_datasets[method] = full_datasets[method].merge(
                 bust_dfs[method][["system_id", "ligand_instance_chain", "pb_success"]],
@@ -137,7 +139,22 @@ def load_data(data_dir: Path, methods: list):
                 full_datasets[method]["pb_success"].fillna(False).astype(float)
             )
         else:
-            full_datasets[method]["pb_success"] = -1
+            # Try to read pb_success from the predictions file we already loaded
+            if "pb_success" in df.columns:
+                bust_df = (
+                    df[["target", "ligand_instance_chain", "pb_success"]]
+                    .rename(columns={"target": "system_id"})
+                )
+                full_datasets[method] = full_datasets[method].merge(
+                    bust_df[["system_id", "ligand_instance_chain", "pb_success"]],
+                    on=["system_id", "ligand_instance_chain"],
+                    how="left",
+                )
+                full_datasets[method]["pb_success"] = (
+                    full_datasets[method]["pb_success"].fillna(False).astype(float)
+                )
+            else:
+                full_datasets[method]["pb_success"] = -1
 
     return full_datasets, annotated_df
 
