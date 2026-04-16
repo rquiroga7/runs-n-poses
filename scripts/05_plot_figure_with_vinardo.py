@@ -46,18 +46,23 @@ def load_data(data_dir: Path, methods: list):
             # Rename ligand_chain -> ligand_instance_chain if needed
             if "ligand_chain" in bust_df.columns and "ligand_instance_chain" not in bust_df.columns:
                 bust_df["ligand_instance_chain"] = bust_df["ligand_chain"]
-            # Compute pb_success from individual checks if not present
+            # If `pb_success` not present, derive it from available PB check columns
+            checks = [
+                'sanitization', 'inchi_convertible', 'all_atoms_connected',
+                'bond_lengths', 'bond_angles', 'internal_steric_clash',
+                'aromatic_ring_flatness', 'double_bond_flatness',
+                'internal_energy', 'protein-ligand_maximum_distance',
+                'minimum_distance_to_protein'
+            ]
             if "pb_success" not in bust_df.columns:
-                checks = ["sanitization", "inchi_convertible", "all_atoms_connected",
-                          "bond_lengths", "bond_angles", "internal_steric_clash",
-                          "aromatic_ring_flatness", "double_bond_flatness",
-                          "internal_energy", "protein-ligand_maximum_distance",
-                          "minimum_distance_to_protein"]
                 available = [c for c in checks if c in bust_df.columns]
                 if available:
-                    bust_df["pb_success"] = bust_df[available].all(axis=1).astype(float)
+                    # Normalize textual booleans and compute pb_success as all available checks True
+                    temp = bust_df[available].replace({'True': True, 'False': False})
+                    bust_df["pb_success"] = temp.eq(True).all(axis=1).astype(float)
                 else:
-                    bust_df["pb_success"] = -1
+                    # No check columns present: mark as unknown
+                    bust_df["pb_success"] = -1.0
             bust_dfs[m] = bust_df
 
     # Load predictions
@@ -309,9 +314,9 @@ def main():
     print(f"  Methods in results: {methods_in_df}")
 
     # Add vinardock color and shape to plotting module
-    plotting.COLORS[args.vinardo_method_name] = "#FF69B4"  # Hot pink
+    plotting.COLORS[args.vinardo_method_name] = "#2ca02c"  # Green
     plotting.SHAPES[args.vinardo_method_name] = "^"  # Triangle
-    plotting.NAME_MAPPING[args.vinardo_method_name] = "VinardoDock"
+    plotting.NAME_MAPPING[args.vinardo_method_name] = "Vinardock"
 
     # Create figure using plotting.make_main_figure (exact same call as figures.ipynb)
     print("\nCreating figure using plotting.make_main_figure()...")

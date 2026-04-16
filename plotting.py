@@ -253,7 +253,7 @@ def make_one_plot_pb(
         all_handles,
         all_labels,
         loc="upper left",
-        bbox_to_anchor=(0.02, 0.88),
+        bbox_to_anchor=(0.02, 0.92),
         bbox_transform=ax.transAxes,
         frameon=False,
         ncol=1,
@@ -279,6 +279,7 @@ def plot_success_by_similarity(
     label="",
     bootstrap=True,
     linestyle="-",
+    pb_success_column=None,
 ):
     if ax is None:
         fig, ax = plt.subplots(1, 1, figsize=(10, 8))
@@ -293,9 +294,20 @@ def plot_success_by_similarity(
         bin_sizes.append(len(results_df[mask]))
 
         mask_success = mask & results_df[lddt_pli_column].notna()
-        success_vals = (results_df[mask_success][rmsd_column] < rmsd_threshold) & (
-            results_df[mask_success][lddt_pli_column] > lddt_pli_threshold
-        )
+        # If a PB success column is provided, compute success as
+        # (RMSD<threshold & LDDT>threshold & PB==1) but keep the
+        # denominator as all entries with LDDT available in the bin.
+        if pb_success_column is not None and pb_success_column in results_df.columns:
+            success_vals = (
+                (results_df[mask_success][rmsd_column] < rmsd_threshold)
+                & (results_df[mask_success][lddt_pli_column] > lddt_pli_threshold)
+                & (results_df[mask_success][pb_success_column] == 1)
+            )
+        else:
+            success_vals = (
+                (results_df[mask_success][rmsd_column] < rmsd_threshold)
+                & (results_df[mask_success][lddt_pli_column] > lddt_pli_threshold)
+            )
         bin_data.append(np.mean(success_vals.astype(float)) * 100)
 
         n_bootstrap = 1000
@@ -412,6 +424,8 @@ def make_one_plot(
     legend_loc="lower right",
     ylabel="Success Rate (%)",
     xlabel="Similarity to the training set",
+    require_pb=False,
+    include_best=True,
 ):
     df = df[df["sucos_shape"].notna() & df["ligand_is_proper"]].reset_index(drop=True)
     for method in methods:
@@ -427,21 +441,23 @@ def make_one_plot(
             lddt_pli_threshold=lddt_pli_threshold,
             similarity_metric=similarity_metric,
             similarity_bins=similarity_bins,
+            pb_success_column=(f"pb_success_{method}" if require_pb else None),
         )
 
-    plot_success_by_similarity(
-        df,
-        ax=ax,
-        lddt_pli_column="lddt_pli_max",
-        rmsd_column="rmsd_min",
-        label="Best",
-        shape="*",
-        color=COLORS["best"],
-        rmsd_threshold=rmsd_threshold,
-        lddt_pli_threshold=lddt_pli_threshold,
-        similarity_metric=similarity_metric,
-        similarity_bins=similarity_bins,
-    )
+    if include_best:
+        plot_success_by_similarity(
+            df,
+            ax=ax,
+            lddt_pli_column="lddt_pli_max",
+            rmsd_column="rmsd_min",
+            label="Best",
+            shape="*",
+            color=COLORS["best"],
+            rmsd_threshold=rmsd_threshold,
+            lddt_pli_threshold=lddt_pli_threshold,
+            similarity_metric=similarity_metric,
+            similarity_bins=similarity_bins,
+        )
     ax.set_ylabel(ylabel, fontsize=12, fontweight="bold")
     ax.set_xlabel(xlabel, fontsize=12, fontweight="bold")
     ax.text(0.015, 0.99, title, transform=ax.transAxes, fontsize=14, fontweight="bold")
@@ -461,6 +477,8 @@ def make_distribution_plot(
     scatter_spacing=0.2,
     violin_color="#a2a4f2",
     add_xlabel=True,
+    show_threshold_label=True,
+    y_ticks=None,
 ):
     plot_data = []
     df = df[df["ligand_is_proper"] & df["sucos_shape"].notna()].reset_index(drop=True)
@@ -578,19 +596,28 @@ def make_distribution_plot(
     label = threshold if accuracy_metric == "lddt_pli" else f"{threshold}Å"
     if log:
         threshold = np.log10(threshold)
-    ax.axhline(
-        y=threshold, color="black", linestyle="--", alpha=0.5, linewidth=2, zorder=-1
-    )
-    ax.text(
-        0.3,
-        threshold + 0.03,
-        label,
-        verticalalignment="center",
-        horizontalalignment="right",
-        fontsize=12,
-        fontweight="bold",
-        color="black",
-    )
+    if show_threshold_label:
+        ax.axhline(
+            y=threshold, color="black", linestyle="--", alpha=0.5, linewidth=2, zorder=-1
+        )
+        ax.text(
+            0.3,
+            threshold + 0.03,
+            label,
+            verticalalignment="center",
+            horizontalalignment="right",
+            fontsize=12,
+            fontweight="bold",
+            color="black",
+        )
+    if y_ticks is not None:
+        # If log scale requested, convert ticks to log-space positions
+        if log:
+            ax.set_yticks(np.log10(y_ticks))
+            ax.set_yticklabels([f"{t:.1f}" for t in y_ticks])
+        else:
+            ax.set_yticks(y_ticks)
+            ax.set_yticklabels([f"{t:.1f}" for t in y_ticks])
     if log:
         ax.set_yticklabels([f"{10**x:.2f}" for x in ax.get_yticks()])
     ax.spines["top"].set_visible(False)
@@ -644,6 +671,7 @@ def make_main_figure(
         rmsd_threshold=rmsd_threshold,
         methods=methods,
         legend_loc=legend_loc,
+        include_best=False,
     )
     make_one_plot(
         df,
@@ -651,11 +679,13 @@ def make_main_figure(
         title=labels[1],
         similarity_metric=similarity_metric,
         similarity_bins=similarity_bins,
-        lddt_pli_threshold=0,
+        lddt_pli_threshold=0.8,
         rmsd_threshold=rmsd_threshold,
         methods=methods,
         legend_loc=None,
-        ylabel=f"RMSD < {rmsd_threshold}Å Success Rate (%)",
+        require_pb=True,
+        ylabel="Success Rate + PB-Valid (%)",
+        include_best=False,
     )
     distribution_axes = [ax_lddt_pli, ax_rmsd]
     accuracy_metrics = ["lddt_pli", "rmsd"]
@@ -673,18 +703,44 @@ def make_main_figure(
             fontsize=14,
             fontweight="bold",
         )
-        make_distribution_plot(
-            df,
-            ax,
-            accuracy_metric,
-            threshold,
-            similarity_metric=similarity_metric,
-            similarity_bins=similarity_bins,
-            methods=methods,
-            log=log,
-            scatter_spacing=scatter_spacing,
-            add_xlabel=add_xlabel,
-        )
+        # For panel C (i==0, lddt_pli) we hide the threshold label.
+        # For panel D (i==1, rmsd) we hide the threshold label and set custom y ticks.
+        if i == 0:
+            make_distribution_plot(
+                df,
+                ax,
+                accuracy_metric,
+                threshold,
+                similarity_metric=similarity_metric,
+                similarity_bins=similarity_bins,
+                methods=methods,
+                log=log,
+                scatter_spacing=scatter_spacing,
+                add_xlabel=add_xlabel,
+                show_threshold_label=False,
+            )
+            # Draw a dotted black line at y=0.8 for panel C
+            ax.axhline(y=0.8, color="black", linestyle=":", linewidth=1.5)
+        else:
+            make_distribution_plot(
+                df,
+                ax,
+                accuracy_metric,
+                threshold,
+                similarity_metric=similarity_metric,
+                similarity_bins=similarity_bins,
+                methods=methods,
+                log=log,
+                scatter_spacing=scatter_spacing,
+                add_xlabel=add_xlabel,
+                show_threshold_label=False,
+                y_ticks=[0.1, 0.5, 1.0, 2, 5, 25, 100],
+            )
+            # Draw a dotted black line at y=2 for panel D (log-scale axis uses log10 positions)
+            if log:
+                ax.axhline(y=np.log10(2), color="black", linestyle=":", linewidth=1.5)
+            else:
+                ax.axhline(y=2, color="black", linestyle=":", linewidth=1.5)
 
     make_one_plot_pb(
         df,

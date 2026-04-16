@@ -24,26 +24,60 @@ from pathlib import Path
 
 import pandas as pd
 from tqdm import tqdm
+import tempfile
 
 GT_DIR = Path("/home/rquiroga/Datasets/runs-n-poses-datasets/ground_truth")
+import atexit
+
+
 OUTPUT_DIR = Path("/home/rquiroga/Datasets/runs-n-poses-datasets/vinardo_outputs")
 ANALYSIS_DIR = Path("/home/rquiroga/github/runs-n-poses/examples/analysis/vinardock_2vinardo")
 ANNOTATIONS = Path("/home/rquiroga/Datasets/runs-n-poses-datasets/annotations.csv")
 OUTPUT_CSV = Path("/home/rquiroga/Datasets/runs-n-poses-datasets/predictions/vinardock_2vinardo.csv")
+
+
 POSEBUSTERS_CSV = Path("/home/rquiroga/Datasets/runs-n-poses-datasets/posebusters_results/vinardock_2vinardo.csv")
 
+# Python executable for RDKit environment (used by fixer script)
+RDKIT_PYTHON = "/home/rquiroga/anaconda3/envs/runs_n_poses/bin/python"
+# Path to fixer script that copies GT valence/H onto predicted ligands
+FIXER_SCRIPT = Path(__file__).parent / "fix_pred_copy_gt_valence.py"
 # Canonical PoseBusters (AF3) column order - used to normalize output CSVs
+# Exact header copied from runs-n-poses-datasets/posebusters_results/af3.csv
 CANONICAL_PB_COLUMNS = [
-    "molecule", "position", "mol_pred_loaded", "mol_true_loaded", "mol_cond_loaded",
-    "sanitization", "inchi_convertible", "all_atoms_connected", "molecular_formula",
-    "molecular_bonds", "double_bond_stereochemistry", "tetrahedral_chirality",
-    "bond_lengths", "bond_angles", "internal_steric_clash", "aromatic_ring_flatness",
-    "non-aromatic_ring_non-flatness", "double_bond_flatness", "internal_energy",
-    "protein-ligand_maximum_distance", "minimum_distance_to_protein",
-    "minimum_distance_to_organic_cofactors", "minimum_distance_to_inorganic_cofactors",
-    "minimum_distance_to_waters", "volume_overlap_with_protein",
-    "volume_overlap_with_organic_cofactors", "volume_overlap_with_inorganic_cofactors",
-    "volume_overlap_with_waters", "system_id", "seed", "sample", "ligand_chain", "method"
+    "molecule",
+    "position",
+    "mol_pred_loaded",
+    "mol_true_loaded",
+    "mol_cond_loaded",
+    "sanitization",
+    "inchi_convertible",
+    "all_atoms_connected",
+    "molecular_formula",
+    "molecular_bonds",
+    "double_bond_stereochemistry",
+    "tetrahedral_chirality",
+    "bond_lengths",
+    "bond_angles",
+    "internal_steric_clash",
+    "aromatic_ring_flatness",
+    "non-aromatic_ring_non-flatness",
+    "double_bond_flatness",
+    "internal_energy",
+    "protein-ligand_maximum_distance",
+    "minimum_distance_to_protein",
+    "minimum_distance_to_organic_cofactors",
+    "minimum_distance_to_inorganic_cofactors",
+    "minimum_distance_to_waters",
+    "volume_overlap_with_protein",
+    "volume_overlap_with_organic_cofactors",
+    "volume_overlap_with_inorganic_cofactors",
+    "volume_overlap_with_waters",
+    "system_id",
+    "seed",
+    "sample",
+    "ligand_chain",
+    "method",
 ]
 
 # Subset of check columns that are boolean pass/fail in PoseBusters
@@ -64,7 +98,7 @@ def convert_pdbt_to_sdf(pdbt_file: str, sdf_file: str) -> bool:
     """Convert PDBT to SDF using obabel."""
     try:
         r = subprocess.run(
-            ["obabel-25-07", pdbt_file, "-O", sdf_file],
+            ["obabel-25-07", pdbt_file, "-O", sdf_file, "-h"],
             capture_output=True, text=True, timeout=30
         )
         return r.returncode == 0 and os.path.exists(sdf_file) and os.path.getsize(sdf_file) > 100
@@ -296,12 +330,58 @@ def analyze_system(system_id: str, annotations: pd.DataFrame, run_posebusters_fl
                     metrics = None
         # Run PoseBusters if requested
         if run_posebusters_flag:
-            pb_results = run_posebusters(str(docked_sdf), str(gt_sdf), str(receptor_cif))
+            # create temporary RDKit-sanitized SDFs with explicit Hs for PB input (non-destructive)
+            tmp_pred = None
+            tmp_gt = None
+            tmp_fixed_pred = None
+            try:
+                tmp_pred = make_rdkit_sanitized_sdf(str(docked_sdf))
+            except Exception:
+                tmp_pred = None
+            try:
+                tmp_gt = make_rdkit_sanitized_sdf(str(gt_sdf))
+            except Exception:
+                tmp_gt = None
+
+            # Attempt to create a fixed predicted SDF by copying GT valence/H using the fixer script.
+            # This is non-destructive: if the fixer fails, we'll fall back to the RDKit-sanitized or original SDF.
+            try:
+                tf = tempfile.NamedTemporaryFile(delete=False, suffix=".sdf")
+                tf.close()
+                fixer_cmd = [RDKIT_PYTHON, str(FIXER_SCRIPT), str(docked_sdf), str(gt_sdf), tf.name]
+                r = subprocess.run(fixer_cmd, capture_output=True, text=True, timeout=30)
+                if r.returncode == 0 and os.path.exists(tf.name) and os.path.getsize(tf.name) > 0:
+                    tmp_fixed_pred = tf.name
+                else:
+                    if os.path.exists(tf.name):
+                        os.remove(tf.name)
+                    tmp_fixed_pred = None
+            except Exception:
+                tmp_fixed_pred = None
+
+            use_pred = tmp_fixed_pred if tmp_fixed_pred else (tmp_pred if tmp_pred else str(docked_sdf))
+            use_gt = tmp_gt if tmp_gt else str(gt_sdf)
+            pb_results = run_posebusters(use_pred, use_gt, str(receptor_cif))
+            # cleanup temp files
+            try:
+                if tmp_pred and os.path.exists(tmp_pred):
+                    os.remove(tmp_pred)
+                if tmp_gt and os.path.exists(tmp_gt):
+                    os.remove(tmp_gt)
+                if tmp_fixed_pred and os.path.exists(tmp_fixed_pred):
+                    os.remove(tmp_fixed_pred)
+            except Exception:
+                pass
             # If metrics are present (we extracted OST), augment with pb_success
             if metrics is not None:
                 metrics["pb_success"] = 1.0 if pb_results.get("pb_success", False) else 0.0
             # Build a row for the PoseBusters CSV matching af3.csv-like format
             pb_row = dict(pb_results) if isinstance(pb_results, dict) else {}
+            # Ensure a normalized numeric pb_success column exists for downstream plotting
+            try:
+                pb_row["pb_success"] = 1.0 if pb_results.get("pb_success", False) else 0.0
+            except Exception:
+                pb_row["pb_success"] = 0.0
             pb_row["system_id"] = system_id
             pb_row.setdefault("seed", (metrics.get("seed", 1) if metrics is not None else 1))
             pb_row.setdefault("sample", (metrics.get("sample", 1) if metrics is not None else 1))
@@ -316,6 +396,76 @@ def analyze_system(system_id: str, annotations: pd.DataFrame, run_posebusters_fl
             results.append(metrics)
 
     return results, pb_rows
+
+
+def make_rdkit_sanitized_sdf(src_path: str) -> str:
+    """Create a temporary SDF sanitized with RDKit (explicit Hs).
+
+    If RDKit is not available, fall back to an OpenBabel round-trip with -h.
+    Returns path to the temporary SDF file (caller is responsible for cleanup).
+    """
+    # Try RDKit first
+    try:
+        from rdkit import Chem
+    except Exception:
+        Chem = None
+
+    # Fallback to OpenBabel if RDKit isn't available
+    if Chem is None:
+        tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".sdf")
+        tmp.close()
+        try:
+            r = subprocess.run(
+                ["obabel-25-07", src_path, "-O", tmp.name, "-h"],
+                capture_output=True, text=True, timeout=30
+            )
+            if r.returncode == 0 and os.path.exists(tmp.name) and os.path.getsize(tmp.name) > 0:
+                return tmp.name
+        except Exception:
+            pass
+        if os.path.exists(tmp.name):
+            os.remove(tmp.name)
+        raise RuntimeError("Neither RDKit available nor OpenBabel round-trip succeeded")
+
+    # Use RDKit to read, sanitize, add explicit Hs and write a new temporary SDF
+    suppl = Chem.SDMolSupplier(src_path, removeHs=False)
+    mols = [m for m in suppl if m is not None]
+    if not mols:
+        # try reading removing Hs then add them
+        suppl = Chem.SDMolSupplier(src_path, removeHs=True)
+        mols = [m for m in suppl if m is not None]
+
+    if not mols:
+        raise RuntimeError(f"RDKit could not read molecules from: {src_path}")
+
+    tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".sdf")
+    tmp.close()
+    writer = Chem.SDWriter(tmp.name)
+    for m in mols:
+        if m is None:
+            continue
+        try:
+            Chem.SanitizeMol(m)
+        except Exception:
+            try:
+                Chem.SanitizeMol(m, Chem.SanitizeFlags.SANITIZE_ALL ^ Chem.SanitizeFlags.SANITIZE_KEKULIZE)
+            except Exception:
+                pass
+        try:
+            m_h = Chem.AddHs(m)
+            writer.write(m_h)
+        except Exception:
+            try:
+                writer.write(m)
+            except Exception:
+                pass
+    writer.close()
+    # Basic check
+    if not os.path.exists(tmp.name) or os.path.getsize(tmp.name) == 0:
+        if os.path.exists(tmp.name):
+            os.remove(tmp.name)
+        raise RuntimeError("Failed to write RDKit-sanitized SDF")
+    return tmp.name
 
 
 def main():
