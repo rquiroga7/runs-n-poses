@@ -1,0 +1,111 @@
+{
+    "model_ligands": [
+        "/home/rquiroga/Datasets/runs-n-poses-datasets/vina_outputs/8g9d__1__1.A__1.B/8g9d__1__1.A__1.B_1.B/1.B_dock.sdf:0",
+        "/home/rquiroga/Datasets/runs-n-poses-datasets/vina_outputs/8g9d__1__1.A__1.B/8g9d__1__1.A__1.B_1.B/1.B_dock.sdf:1",
+        "/home/rquiroga/Datasets/runs-n-poses-datasets/vina_outputs/8g9d__1__1.A__1.B/8g9d__1__1.A__1.B_1.B/1.B_dock.sdf:2",
+        "/home/rquiroga/Datasets/runs-n-poses-datasets/vina_outputs/8g9d__1__1.A__1.B/8g9d__1__1.A__1.B_1.B/1.B_dock.sdf:3",
+        "/home/rquiroga/Datasets/runs-n-poses-datasets/vina_outputs/8g9d__1__1.A__1.B/8g9d__1__1.A__1.B_1.B/1.B_dock.sdf:4",
+        "/home/rquiroga/Datasets/runs-n-poses-datasets/vina_outputs/8g9d__1__1.A__1.B/8g9d__1__1.A__1.B_1.B/1.B_dock.sdf:5",
+        "/home/rquiroga/Datasets/runs-n-poses-datasets/vina_outputs/8g9d__1__1.A__1.B/8g9d__1__1.A__1.B_1.B/1.B_dock.sdf:6",
+        "/home/rquiroga/Datasets/runs-n-poses-datasets/vina_outputs/8g9d__1__1.A__1.B/8g9d__1__1.A__1.B_1.B/1.B_dock.sdf:7",
+        "/home/rquiroga/Datasets/runs-n-poses-datasets/vina_outputs/8g9d__1__1.A__1.B/8g9d__1__1.A__1.B_1.B/1.B_dock.sdf:8"
+    ],
+    "reference_ligands": [
+        "/home/rquiroga/Datasets/runs-n-poses-datasets/ground_truth/8g9d__1__1.A__1.B/ligand_files/1.B.sdf"
+    ],
+    "lddt_pli": {
+        "assigned_scores": [],
+        "model_ligand_unassigned_reason": {
+            "/home/rquiroga/Datasets/runs-n-poses-datasets/vina_outputs/8g9d__1__1.A__1.B/8g9d__1__1.A__1.B_1.B/1.B_dock.sdf:0": [
+                "symmetries",
+                "Too many symmetries between ligand atoms were found - increasing max_symmetries might help"
+            ],
+            "/home/rquiroga/Datasets/runs-n-poses-datasets/vina_outputs/8g9d__1__1.A__1.B/8g9d__1__1.A__1.B_1.B/1.B_dock.sdf:1": [
+                "symmetries",
+                "Too many symmetries between ligand atoms were found - increasing max_symmetries might help"
+            ],
+            "/home/rquiroga/Datasets/runs-n-poses-datasets/vina_outputs/8g9d__1__1.A__1.B/8g9d__1__1.A__1.B_1.B/1.B_dock.sdf:2": [
+                "symmetries",
+                "Too many symmetries between ligand atoms were found - increasing max_symmetries might help"
+            ],
+            "/home/rquiroga/Datasets/runs-n-poses-datasets/vina_outputs/8g9d__1__1.A__1.B/8g9d__1__1.A__1.B_1.B/1.B_dock.sdf:3": [
+                "symmetries",
+                "Too many symmetries between ligand atoms were found - increasing max_symmetries might help"
+            ],
+            "/home/rquiroga/Datasets/runs-n-poses-datasets/vina_outputs/8g9d__1__1.A__1.B/8g9d__1__1.A__1.B_1.B/1.B_dock.sdf:4": [
+                "symmetries",
+                "Too many symmetries between ligand atoms were found - increasing max_symmetries might help"
+            ],
+            "/home/rquiroga/Datasets/runs-n-poses-datasets/vina_outputs/8g9d__1__1.A__1.B/8g9d__1__1.A__1.B_1.B/1.B_dock.sdf:5": [
+                "symmetries",
+                "Too many symmetries between ligand atoms were found - increasing max_symmetries might help"
+            ],
+            "/home/rquiroga/Datasets/runs-n-poses-datasets/vina_outputs/8g9d__1__1.A__1.B/8g9d__1__1.A__1.B_1.B/1.B_dock.sdf:6": [
+                "symmetries",
+                "Too many symmetries between ligand atoms were found - increasing max_symmetries might help"
+            ],
+            "/home/rquiroga/Datasets/runs-n-poses-datasets/vina_outputs/8g9d__1__1.A__1.B/8g9d__1__1.A__1.B_1.B/1.B_dock.sdf:7": [
+                "symmetries",
+                "Too many symmetries between ligand atoms were found - increasing max_symmetries might help"
+            ],
+            "/home/rquiroga/Datasets/runs-n-poses-datasets/vina_outputs/8g9d__1__1.A__1.B/8g9d__1__1.A__1.B_1.B/1.B_dock.sdf:8": [
+                "symmetries",
+                "Too many symmetries between ligand atoms were found - increasing max_symmetries might help"
+            ]
+        },
+        "reference_ligand_unassigned_reason": {
+            "/home/rquiroga/Datasets/runs-n-poses-datasets/ground_truth/8g9d__1__1.A__1.B/ligand_files/1.B.sdf": [
+                "symmetries",
+                "Too many symmetries between ligand atoms were found - increasing max_symmetries might help"
+            ]
+        }
+    },
+    "rmsd": {
+        "assigned_scores": [],
+        "model_ligand_unassigned_reason": {
+            "/home/rquiroga/Datasets/runs-n-poses-datasets/vina_outputs/8g9d__1__1.A__1.B/8g9d__1__1.A__1.B_1.B/1.B_dock.sdf:0": [
+                "symmetries",
+                "Too many symmetries between ligand atoms were found - increasing max_symmetries might help"
+            ],
+            "/home/rquiroga/Datasets/runs-n-poses-datasets/vina_outputs/8g9d__1__1.A__1.B/8g9d__1__1.A__1.B_1.B/1.B_dock.sdf:1": [
+                "symmetries",
+                "Too many symmetries between ligand atoms were found - increasing max_symmetries might help"
+            ],
+            "/home/rquiroga/Datasets/runs-n-poses-datasets/vina_outputs/8g9d__1__1.A__1.B/8g9d__1__1.A__1.B_1.B/1.B_dock.sdf:2": [
+                "symmetries",
+                "Too many symmetries between ligand atoms were found - increasing max_symmetries might help"
+            ],
+            "/home/rquiroga/Datasets/runs-n-poses-datasets/vina_outputs/8g9d__1__1.A__1.B/8g9d__1__1.A__1.B_1.B/1.B_dock.sdf:3": [
+                "symmetries",
+                "Too many symmetries between ligand atoms were found - increasing max_symmetries might help"
+            ],
+            "/home/rquiroga/Datasets/runs-n-poses-datasets/vina_outputs/8g9d__1__1.A__1.B/8g9d__1__1.A__1.B_1.B/1.B_dock.sdf:4": [
+                "symmetries",
+                "Too many symmetries between ligand atoms were found - increasing max_symmetries might help"
+            ],
+            "/home/rquiroga/Datasets/runs-n-poses-datasets/vina_outputs/8g9d__1__1.A__1.B/8g9d__1__1.A__1.B_1.B/1.B_dock.sdf:5": [
+                "symmetries",
+                "Too many symmetries between ligand atoms were found - increasing max_symmetries might help"
+            ],
+            "/home/rquiroga/Datasets/runs-n-poses-datasets/vina_outputs/8g9d__1__1.A__1.B/8g9d__1__1.A__1.B_1.B/1.B_dock.sdf:6": [
+                "symmetries",
+                "Too many symmetries between ligand atoms were found - increasing max_symmetries might help"
+            ],
+            "/home/rquiroga/Datasets/runs-n-poses-datasets/vina_outputs/8g9d__1__1.A__1.B/8g9d__1__1.A__1.B_1.B/1.B_dock.sdf:7": [
+                "symmetries",
+                "Too many symmetries between ligand atoms were found - increasing max_symmetries might help"
+            ],
+            "/home/rquiroga/Datasets/runs-n-poses-datasets/vina_outputs/8g9d__1__1.A__1.B/8g9d__1__1.A__1.B_1.B/1.B_dock.sdf:8": [
+                "symmetries",
+                "Too many symmetries between ligand atoms were found - increasing max_symmetries might help"
+            ]
+        },
+        "reference_ligand_unassigned_reason": {
+            "/home/rquiroga/Datasets/runs-n-poses-datasets/ground_truth/8g9d__1__1.A__1.B/ligand_files/1.B.sdf": [
+                "symmetries",
+                "Too many symmetries between ligand atoms were found - increasing max_symmetries might help"
+            ]
+        }
+    },
+    "status": "SUCCESS"
+}

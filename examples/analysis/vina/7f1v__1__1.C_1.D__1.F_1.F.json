@@ -1,0 +1,5 @@
+{
+    "status": "FAILURE",
+    "traceback": "Traceback (most recent call last):\n  File \"/home/rquiroga/anaconda3/envs/runs_n_poses/libexec/openstructure/ost-compare-ligand-structures\", line 711, in _Main\n    out = _Process(cleaned_model, cleaned_model_ligands,\n  File \"/home/rquiroga/anaconda3/envs/runs_n_poses/libexec/openstructure/ost-compare-ligand-structures\", line 614, in _Process\n    \"inconsistent_residues\": [_QualifiedResidueNotation(r) for r in\n  File \"/home/rquiroga/anaconda3/envs/runs_n_poses/libexec/openstructure/ost-compare-ligand-structures\", line 614, in <listcomp>\n    \"inconsistent_residues\": [_QualifiedResidueNotation(r) for r in\n  File \"/home/rquiroga/anaconda3/envs/runs_n_poses/libexec/openstructure/ost-compare-ligand-structures\", line 412, in _QualifiedResidueNotation\n    resnum = r.number\nAttributeError: 'tuple' object has no attribute 'number'\n",
+    "exception": "AttributeError: 'tuple' object has no attribute 'number'\n"
+}

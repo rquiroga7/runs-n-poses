@@ -1,0 +1,111 @@
+{
+    "model_ligands": [
+        "/home/rquiroga/Datasets/runs-n-poses-datasets/vina_outputs/7ngx__1__1.A__1.B/7ngx__1__1.A__1.B_1.B/1.B_dock.sdf:0",
+        "/home/rquiroga/Datasets/runs-n-poses-datasets/vina_outputs/7ngx__1__1.A__1.B/7ngx__1__1.A__1.B_1.B/1.B_dock.sdf:1",
+        "/home/rquiroga/Datasets/runs-n-poses-datasets/vina_outputs/7ngx__1__1.A__1.B/7ngx__1__1.A__1.B_1.B/1.B_dock.sdf:2",
+        "/home/rquiroga/Datasets/runs-n-poses-datasets/vina_outputs/7ngx__1__1.A__1.B/7ngx__1__1.A__1.B_1.B/1.B_dock.sdf:3",
+        "/home/rquiroga/Datasets/runs-n-poses-datasets/vina_outputs/7ngx__1__1.A__1.B/7ngx__1__1.A__1.B_1.B/1.B_dock.sdf:4",
+        "/home/rquiroga/Datasets/runs-n-poses-datasets/vina_outputs/7ngx__1__1.A__1.B/7ngx__1__1.A__1.B_1.B/1.B_dock.sdf:5",
+        "/home/rquiroga/Datasets/runs-n-poses-datasets/vina_outputs/7ngx__1__1.A__1.B/7ngx__1__1.A__1.B_1.B/1.B_dock.sdf:6",
+        "/home/rquiroga/Datasets/runs-n-poses-datasets/vina_outputs/7ngx__1__1.A__1.B/7ngx__1__1.A__1.B_1.B/1.B_dock.sdf:7",
+        "/home/rquiroga/Datasets/runs-n-poses-datasets/vina_outputs/7ngx__1__1.A__1.B/7ngx__1__1.A__1.B_1.B/1.B_dock.sdf:8"
+    ],
+    "reference_ligands": [
+        "/home/rquiroga/Datasets/runs-n-poses-datasets/ground_truth/7ngx__1__1.A__1.B/ligand_files/1.B.sdf"
+    ],
+    "lddt_pli": {
+        "assigned_scores": [],
+        "model_ligand_unassigned_reason": {
+            "/home/rquiroga/Datasets/runs-n-poses-datasets/vina_outputs/7ngx__1__1.A__1.B/7ngx__1__1.A__1.B_1.B/1.B_dock.sdf:0": [
+                "disconnected",
+                "Ligand graph is disconnected"
+            ],
+            "/home/rquiroga/Datasets/runs-n-poses-datasets/vina_outputs/7ngx__1__1.A__1.B/7ngx__1__1.A__1.B_1.B/1.B_dock.sdf:1": [
+                "disconnected",
+                "Ligand graph is disconnected"
+            ],
+            "/home/rquiroga/Datasets/runs-n-poses-datasets/vina_outputs/7ngx__1__1.A__1.B/7ngx__1__1.A__1.B_1.B/1.B_dock.sdf:2": [
+                "disconnected",
+                "Ligand graph is disconnected"
+            ],
+            "/home/rquiroga/Datasets/runs-n-poses-datasets/vina_outputs/7ngx__1__1.A__1.B/7ngx__1__1.A__1.B_1.B/1.B_dock.sdf:3": [
+                "disconnected",
+                "Ligand graph is disconnected"
+            ],
+            "/home/rquiroga/Datasets/runs-n-poses-datasets/vina_outputs/7ngx__1__1.A__1.B/7ngx__1__1.A__1.B_1.B/1.B_dock.sdf:4": [
+                "disconnected",
+                "Ligand graph is disconnected"
+            ],
+            "/home/rquiroga/Datasets/runs-n-poses-datasets/vina_outputs/7ngx__1__1.A__1.B/7ngx__1__1.A__1.B_1.B/1.B_dock.sdf:5": [
+                "disconnected",
+                "Ligand graph is disconnected"
+            ],
+            "/home/rquiroga/Datasets/runs-n-poses-datasets/vina_outputs/7ngx__1__1.A__1.B/7ngx__1__1.A__1.B_1.B/1.B_dock.sdf:6": [
+                "disconnected",
+                "Ligand graph is disconnected"
+            ],
+            "/home/rquiroga/Datasets/runs-n-poses-datasets/vina_outputs/7ngx__1__1.A__1.B/7ngx__1__1.A__1.B_1.B/1.B_dock.sdf:7": [
+                "disconnected",
+                "Ligand graph is disconnected"
+            ],
+            "/home/rquiroga/Datasets/runs-n-poses-datasets/vina_outputs/7ngx__1__1.A__1.B/7ngx__1__1.A__1.B_1.B/1.B_dock.sdf:8": [
+                "disconnected",
+                "Ligand graph is disconnected"
+            ]
+        },
+        "reference_ligand_unassigned_reason": {
+            "/home/rquiroga/Datasets/runs-n-poses-datasets/ground_truth/7ngx__1__1.A__1.B/ligand_files/1.B.sdf": [
+                "single_ligand_issue",
+                "Cannot compute valid pairwise score as either model or target ligand have non-zero state."
+            ]
+        }
+    },
+    "rmsd": {
+        "assigned_scores": [],
+        "model_ligand_unassigned_reason": {
+            "/home/rquiroga/Datasets/runs-n-poses-datasets/vina_outputs/7ngx__1__1.A__1.B/7ngx__1__1.A__1.B_1.B/1.B_dock.sdf:0": [
+                "disconnected",
+                "Ligand graph is disconnected"
+            ],
+            "/home/rquiroga/Datasets/runs-n-poses-datasets/vina_outputs/7ngx__1__1.A__1.B/7ngx__1__1.A__1.B_1.B/1.B_dock.sdf:1": [
+                "disconnected",
+                "Ligand graph is disconnected"
+            ],
+            "/home/rquiroga/Datasets/runs-n-poses-datasets/vina_outputs/7ngx__1__1.A__1.B/7ngx__1__1.A__1.B_1.B/1.B_dock.sdf:2": [
+                "disconnected",
+                "Ligand graph is disconnected"
+            ],
+            "/home/rquiroga/Datasets/runs-n-poses-datasets/vina_outputs/7ngx__1__1.A__1.B/7ngx__1__1.A__1.B_1.B/1.B_dock.sdf:3": [
+                "disconnected",
+                "Ligand graph is disconnected"
+            ],
+            "/home/rquiroga/Datasets/runs-n-poses-datasets/vina_outputs/7ngx__1__1.A__1.B/7ngx__1__1.A__1.B_1.B/1.B_dock.sdf:4": [
+                "disconnected",
+                "Ligand graph is disconnected"
+            ],
+            "/home/rquiroga/Datasets/runs-n-poses-datasets/vina_outputs/7ngx__1__1.A__1.B/7ngx__1__1.A__1.B_1.B/1.B_dock.sdf:5": [
+                "disconnected",
+                "Ligand graph is disconnected"
+            ],
+            "/home/rquiroga/Datasets/runs-n-poses-datasets/vina_outputs/7ngx__1__1.A__1.B/7ngx__1__1.A__1.B_1.B/1.B_dock.sdf:6": [
+                "disconnected",
+                "Ligand graph is disconnected"
+            ],
+            "/home/rquiroga/Datasets/runs-n-poses-datasets/vina_outputs/7ngx__1__1.A__1.B/7ngx__1__1.A__1.B_1.B/1.B_dock.sdf:7": [
+                "disconnected",
+                "Ligand graph is disconnected"
+            ],
+            "/home/rquiroga/Datasets/runs-n-poses-datasets/vina_outputs/7ngx__1__1.A__1.B/7ngx__1__1.A__1.B_1.B/1.B_dock.sdf:8": [
+                "disconnected",
+                "Ligand graph is disconnected"
+            ]
+        },
+        "reference_ligand_unassigned_reason": {
+            "/home/rquiroga/Datasets/runs-n-poses-datasets/ground_truth/7ngx__1__1.A__1.B/ligand_files/1.B.sdf": [
+                "single_ligand_issue",
+                "Cannot compute valid pairwise score as either model or target ligand have non-zero state."
+            ]
+        }
+    },
+    "status": "SUCCESS"
+}

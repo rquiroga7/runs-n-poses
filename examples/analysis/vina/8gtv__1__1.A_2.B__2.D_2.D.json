@@ -1,0 +1,289 @@
+{
+    "model_ligands": [
+        "/home/rquiroga/Datasets/runs-n-poses-datasets/vina_outputs/8gtv__1__1.A_2.B__2.D/8gtv__1__1.A_2.B__2.D_2.D/2.D_dock.sdf:0",
+        "/home/rquiroga/Datasets/runs-n-poses-datasets/vina_outputs/8gtv__1__1.A_2.B__2.D/8gtv__1__1.A_2.B__2.D_2.D/2.D_dock.sdf:1",
+        "/home/rquiroga/Datasets/runs-n-poses-datasets/vina_outputs/8gtv__1__1.A_2.B__2.D/8gtv__1__1.A_2.B__2.D_2.D/2.D_dock.sdf:2",
+        "/home/rquiroga/Datasets/runs-n-poses-datasets/vina_outputs/8gtv__1__1.A_2.B__2.D/8gtv__1__1.A_2.B__2.D_2.D/2.D_dock.sdf:3",
+        "/home/rquiroga/Datasets/runs-n-poses-datasets/vina_outputs/8gtv__1__1.A_2.B__2.D/8gtv__1__1.A_2.B__2.D_2.D/2.D_dock.sdf:4",
+        "/home/rquiroga/Datasets/runs-n-poses-datasets/vina_outputs/8gtv__1__1.A_2.B__2.D/8gtv__1__1.A_2.B__2.D_2.D/2.D_dock.sdf:5",
+        "/home/rquiroga/Datasets/runs-n-poses-datasets/vina_outputs/8gtv__1__1.A_2.B__2.D/8gtv__1__1.A_2.B__2.D_2.D/2.D_dock.sdf:6",
+        "/home/rquiroga/Datasets/runs-n-poses-datasets/vina_outputs/8gtv__1__1.A_2.B__2.D/8gtv__1__1.A_2.B__2.D_2.D/2.D_dock.sdf:7",
+        "/home/rquiroga/Datasets/runs-n-poses-datasets/vina_outputs/8gtv__1__1.A_2.B__2.D/8gtv__1__1.A_2.B__2.D_2.D/2.D_dock.sdf:8"
+    ],
+    "reference_ligands": [
+        "/home/rquiroga/Datasets/runs-n-poses-datasets/ground_truth/8gtv__1__1.A_2.B__2.D/ligand_files/2.D.sdf"
+    ],
+    "lddt_pli": {
+        "assigned_scores": [
+            {
+                "score": 0.9020771384239197,
+                "coverage": 1.0,
+                "lddt_pli_n_contacts": 674,
+                "model_ligand": "/home/rquiroga/Datasets/runs-n-poses-datasets/vina_outputs/8gtv__1__1.A_2.B__2.D/8gtv__1__1.A_2.B__2.D_2.D/2.D_dock.sdf:6",
+                "reference_ligand": "/home/rquiroga/Datasets/runs-n-poses-datasets/ground_truth/8gtv__1__1.A_2.B__2.D/ligand_files/2.D.sdf",
+                "bs_ref_res": [
+                    "2.B.138.",
+                    "2.B.171.",
+                    "1.A.1.",
+                    "1.A.2.",
+                    "2.B.144.",
+                    "2.B.117.",
+                    "2.B.118.",
+                    "2.B.49.",
+                    "2.B.46.",
+                    "2.B.52.",
+                    "2.B.24.",
+                    "2.B.145.",
+                    "2.B.146.",
+                    "2.B.168.",
+                    "2.B.142.",
+                    "2.B.41.",
+                    "2.B.192.",
+                    "2.B.188.",
+                    "2.B.42.",
+                    "2.B.174.",
+                    "1.A.300.",
+                    "2.B.116.",
+                    "2.B.43.",
+                    "2.B.190.",
+                    "2.B.51.",
+                    "2.B.53.",
+                    "2.B.175.",
+                    "2.B.172.",
+                    "2.B.139.",
+                    "2.B.161.",
+                    "2.B.140.",
+                    "2.B.163.",
+                    "2.B.169.",
+                    "1.A.214.",
+                    "1.A.299.",
+                    "2.B.25.",
+                    "2.B.28.",
+                    "2.B.137.",
+                    "2.B.173.",
+                    "2.B.126.",
+                    "2.B.147.",
+                    "2.B.165.",
+                    "2.B.164.",
+                    "2.B.186.",
+                    "2.B.39.",
+                    "2.B.189.",
+                    "2.B.48.",
+                    "2.B.50.",
+                    "2.B.162.",
+                    "2.B.170.",
+                    "2.B.143.",
+                    "2.B.187.",
+                    "2.B.181.",
+                    "2.B.26.",
+                    "2.B.136.",
+                    "2.B.119.",
+                    "2.B.167.",
+                    "2.B.141.",
+                    "2.B.54.",
+                    "2.B.40.",
+                    "2.B.44.",
+                    "2.B.45.",
+                    "2.B.47.",
+                    "2.B.57.",
+                    "2.B.185.",
+                    "2.B.114.",
+                    "2.B.85.",
+                    "2.B.166.",
+                    "2.B.27.",
+                    "1.A.213."
+                ],
+                "bs_mdl_res": [
+                    "2.B.41.",
+                    "2.B.145.",
+                    "2.B.142.",
+                    "2.B.188.",
+                    "2.B.192.",
+                    "2.B.190.",
+                    "2.B.172.",
+                    "2.B.163.",
+                    "2.B.140.",
+                    "2.B.165.",
+                    "2.B.164.",
+                    "2.B.189.",
+                    "2.B.186.",
+                    "2.B.143.",
+                    "2.B.187.",
+                    "2.B.141.",
+                    "2.B.54.",
+                    "2.B.44.",
+                    "2.B.167.",
+                    "2.B.166.",
+                    "2.B.144.",
+                    "1.A.1.",
+                    "2.B.49.",
+                    "2.B.52."
+                ]
+            }
+        ],
+        "model_ligand_unassigned_reason": {
+            "/home/rquiroga/Datasets/runs-n-poses-datasets/vina_outputs/8gtv__1__1.A_2.B__2.D/8gtv__1__1.A_2.B__2.D_2.D/2.D_dock.sdf:0": [
+                "stoichiometry",
+                "Ligand was already assigned to an other model ligand (different stoichiometry)"
+            ],
+            "/home/rquiroga/Datasets/runs-n-poses-datasets/vina_outputs/8gtv__1__1.A_2.B__2.D/8gtv__1__1.A_2.B__2.D_2.D/2.D_dock.sdf:1": [
+                "stoichiometry",
+                "Ligand was already assigned to an other model ligand (different stoichiometry)"
+            ],
+            "/home/rquiroga/Datasets/runs-n-poses-datasets/vina_outputs/8gtv__1__1.A_2.B__2.D/8gtv__1__1.A_2.B__2.D_2.D/2.D_dock.sdf:2": [
+                "stoichiometry",
+                "Ligand was already assigned to an other model ligand (different stoichiometry)"
+            ],
+            "/home/rquiroga/Datasets/runs-n-poses-datasets/vina_outputs/8gtv__1__1.A_2.B__2.D/8gtv__1__1.A_2.B__2.D_2.D/2.D_dock.sdf:3": [
+                "stoichiometry",
+                "Ligand was already assigned to an other model ligand (different stoichiometry)"
+            ],
+            "/home/rquiroga/Datasets/runs-n-poses-datasets/vina_outputs/8gtv__1__1.A_2.B__2.D/8gtv__1__1.A_2.B__2.D_2.D/2.D_dock.sdf:4": [
+                "stoichiometry",
+                "Ligand was already assigned to an other model ligand (different stoichiometry)"
+            ],
+            "/home/rquiroga/Datasets/runs-n-poses-datasets/vina_outputs/8gtv__1__1.A_2.B__2.D/8gtv__1__1.A_2.B__2.D_2.D/2.D_dock.sdf:5": [
+                "stoichiometry",
+                "Ligand was already assigned to an other model ligand (different stoichiometry)"
+            ],
+            "/home/rquiroga/Datasets/runs-n-poses-datasets/vina_outputs/8gtv__1__1.A_2.B__2.D/8gtv__1__1.A_2.B__2.D_2.D/2.D_dock.sdf:7": [
+                "stoichiometry",
+                "Ligand was already assigned to an other model ligand (different stoichiometry)"
+            ],
+            "/home/rquiroga/Datasets/runs-n-poses-datasets/vina_outputs/8gtv__1__1.A_2.B__2.D/8gtv__1__1.A_2.B__2.D_2.D/2.D_dock.sdf:8": [
+                "stoichiometry",
+                "Ligand was already assigned to an other model ligand (different stoichiometry)"
+            ]
+        },
+        "reference_ligand_unassigned_reason": {}
+    },
+    "rmsd": {
+        "assigned_scores": [
+            {
+                "score": 1.0454163551330566,
+                "coverage": 1.0,
+                "lddt_lp": 1.0,
+                "bb_rmsd": 3.7907805108261527e-06,
+                "model_ligand": "/home/rquiroga/Datasets/runs-n-poses-datasets/vina_outputs/8gtv__1__1.A_2.B__2.D/8gtv__1__1.A_2.B__2.D_2.D/2.D_dock.sdf:6",
+                "reference_ligand": "/home/rquiroga/Datasets/runs-n-poses-datasets/ground_truth/8gtv__1__1.A_2.B__2.D/ligand_files/2.D.sdf",
+                "chain_mapping": {
+                    "2.B": "2.B"
+                },
+                "bs_ref_res": [
+                    "2.B.41.",
+                    "2.B.49.",
+                    "2.B.54.",
+                    "2.B.140.",
+                    "2.B.141.",
+                    "2.B.142.",
+                    "2.B.143.",
+                    "2.B.144.",
+                    "2.B.145.",
+                    "2.B.163.",
+                    "2.B.164.",
+                    "2.B.166.",
+                    "2.B.172.",
+                    "2.B.187.",
+                    "2.B.188."
+                ],
+                "bs_ref_res_mapped": [
+                    "2.B.41.",
+                    "2.B.49.",
+                    "2.B.54.",
+                    "2.B.140.",
+                    "2.B.141.",
+                    "2.B.142.",
+                    "2.B.143.",
+                    "2.B.144.",
+                    "2.B.145.",
+                    "2.B.163.",
+                    "2.B.164.",
+                    "2.B.166.",
+                    "2.B.172.",
+                    "2.B.187.",
+                    "2.B.188."
+                ],
+                "bs_mdl_res_mapped": [
+                    "2.B.41.",
+                    "2.B.49.",
+                    "2.B.54.",
+                    "2.B.140.",
+                    "2.B.141.",
+                    "2.B.142.",
+                    "2.B.143.",
+                    "2.B.144.",
+                    "2.B.145.",
+                    "2.B.163.",
+                    "2.B.164.",
+                    "2.B.166.",
+                    "2.B.172.",
+                    "2.B.187.",
+                    "2.B.188."
+                ],
+                "inconsistent_residues": [],
+                "transform": [
+                    [
+                        1.0000004768371582,
+                        -7.450580596923828e-08,
+                        -8.940696716308594e-08,
+                        2.09808349609375e-05
+                    ],
+                    [
+                        -7.450580596923828e-08,
+                        0.9999999403953552,
+                        1.0803341865539551e-07,
+                        -3.814697265625e-06
+                    ],
+                    [
+                        -5.960464477539063e-08,
+                        1.0803341865539551e-07,
+                        1.0000001192092896,
+                        -7.62939453125e-06
+                    ],
+                    [
+                        0.0,
+                        0.0,
+                        0.0,
+                        1.0
+                    ]
+                ]
+            }
+        ],
+        "model_ligand_unassigned_reason": {
+            "/home/rquiroga/Datasets/runs-n-poses-datasets/vina_outputs/8gtv__1__1.A_2.B__2.D/8gtv__1__1.A_2.B__2.D_2.D/2.D_dock.sdf:0": [
+                "stoichiometry",
+                "Ligand was already assigned to an other model ligand (different stoichiometry)"
+            ],
+            "/home/rquiroga/Datasets/runs-n-poses-datasets/vina_outputs/8gtv__1__1.A_2.B__2.D/8gtv__1__1.A_2.B__2.D_2.D/2.D_dock.sdf:1": [
+                "stoichiometry",
+                "Ligand was already assigned to an other model ligand (different stoichiometry)"
+            ],
+            "/home/rquiroga/Datasets/runs-n-poses-datasets/vina_outputs/8gtv__1__1.A_2.B__2.D/8gtv__1__1.A_2.B__2.D_2.D/2.D_dock.sdf:2": [
+                "stoichiometry",
+                "Ligand was already assigned to an other model ligand (different stoichiometry)"
+            ],
+            "/home/rquiroga/Datasets/runs-n-poses-datasets/vina_outputs/8gtv__1__1.A_2.B__2.D/8gtv__1__1.A_2.B__2.D_2.D/2.D_dock.sdf:3": [
+                "stoichiometry",
+                "Ligand was already assigned to an other model ligand (different stoichiometry)"
+            ],
+            "/home/rquiroga/Datasets/runs-n-poses-datasets/vina_outputs/8gtv__1__1.A_2.B__2.D/8gtv__1__1.A_2.B__2.D_2.D/2.D_dock.sdf:4": [
+                "stoichiometry",
+                "Ligand was already assigned to an other model ligand (different stoichiometry)"
+            ],
+            "/home/rquiroga/Datasets/runs-n-poses-datasets/vina_outputs/8gtv__1__1.A_2.B__2.D/8gtv__1__1.A_2.B__2.D_2.D/2.D_dock.sdf:5": [
+                "stoichiometry",
+                "Ligand was already assigned to an other model ligand (different stoichiometry)"
+            ],
+            "/home/rquiroga/Datasets/runs-n-poses-datasets/vina_outputs/8gtv__1__1.A_2.B__2.D/8gtv__1__1.A_2.B__2.D_2.D/2.D_dock.sdf:7": [
+                "stoichiometry",
+                "Ligand was already assigned to an other model ligand (different stoichiometry)"
+            ],
+            "/home/rquiroga/Datasets/runs-n-poses-datasets/vina_outputs/8gtv__1__1.A_2.B__2.D/8gtv__1__1.A_2.B__2.D_2.D/2.D_dock.sdf:8": [
+                "stoichiometry",
+                "Ligand was already assigned to an other model ligand (different stoichiometry)"
+            ]
+        },
+        "reference_ligand_unassigned_reason": {}
+    },
+    "status": "SUCCESS"
+}
