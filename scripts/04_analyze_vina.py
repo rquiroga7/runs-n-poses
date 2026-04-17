@@ -19,7 +19,7 @@ import tempfile
 
 GT_DIR = Path("/home/rquiroga/Datasets/runs-n-poses-datasets/ground_truth")
 
-OUTPUT_DIR = Path("/home/rquiroga/Datasets/runs-n-poses-datasets/vina_outputs")
+OUTPUT_DIR = Path("/home/rquiroga/Datasets/runs-n-poses-datasets/autodock_vina_8")
 ANALYSIS_DIR = Path("/home/rquiroga/github/runs-n-poses/examples/analysis/vina")
 ANNOTATIONS = Path("/home/rquiroga/Datasets/runs-n-poses-datasets/annotations.csv")
 OUTPUT_CSV = Path("/home/rquiroga/Datasets/runs-n-poses-datasets/predictions/vina.csv")

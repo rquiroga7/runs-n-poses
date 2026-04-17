@@ -180,7 +180,8 @@ def run_vina(receptor_file: str, ligand_file: str, output_dir: str,
 
 
 def process_system(system_id: str, receptor_dir: Path, ligand_dir: Path,
-                   output_dir: Path, executable: str, threads: int = 4) -> bool:
+                   output_dir: Path, executable: str, threads: int = 4,
+                   exhaustiveness: int = 8) -> bool:
     receptor_file = receptor_dir / system_id / f"{system_id}_receptor.pdbqt"
     if not receptor_file.exists():
         candidates = list((receptor_dir / system_id).glob("*receptor*"))
@@ -213,6 +214,7 @@ def process_system(system_id: str, receptor_dir: Path, ligand_dir: Path,
             ligand_chain,
             executable,
             threads,
+            exhaustiveness,
         ):
             success = True
         else:
@@ -242,6 +244,12 @@ def main():
         "--executable",
         type=str,
         default="vina",
+    )
+    parser.add_argument(
+        "--exhaustiveness",
+        type=int,
+        default=8,
+        help="Vina exhaustiveness value (higher -> more thorough search)",
     )
     parser.add_argument("--system-id", type=str, default=None)
     parser.add_argument("--annotations", type=str, default="/home/rquiroga/Datasets/runs-n-poses-datasets/annotations.csv")
@@ -279,6 +287,7 @@ def main():
             output_dir,
             args.executable,
             args.threads,
+            args.exhaustiveness,
         ):
             success_count += 1
         else:
