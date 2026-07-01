@@ -29,7 +29,7 @@ def convert_sdf_to_pdbt(sdf_file: str, output_file: str, obabel_path: str = "oba
         obabel_path,
         sdf_file,
         "-O", output_file,
-        "-h"
+        "-p 7.4"
     ]
 
     try:

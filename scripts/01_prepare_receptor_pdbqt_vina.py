@@ -35,7 +35,7 @@ def convert_to_pdbqt(input_file: str, output_file: str, obabel_path: str = "obab
         input_file,
         "-O",
         output_file,
-        "-h",
+        "-p 7.4",
         "-xc",
         "-xr",
     ]

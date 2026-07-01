@@ -40,7 +40,7 @@ def convert_to_pdbt(input_file: str, output_file: str, obabel_path: str = "obabe
         obabel_path,
         input_file,
         "-O", output_file,
-        "-h",   # add hydrogens
+        "-p 7.4",   # add hydrogens
         "-xc",  # remove charges
         "-xr"   # remove residues
     ]

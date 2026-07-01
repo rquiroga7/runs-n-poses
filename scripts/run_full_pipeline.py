@@ -4,7 +4,7 @@ Run the full vinardo pipeline on all single-ligand systems.
 
 Steps:
 1. Prepare receptor PDBT files (obabel -h -xc -xr)
-2. Prepare ligand PDBT files (obabel --gen3d -h)
+2. Prepare ligand PDBT files 
 3. Run vinardock-26-04 --scoring 2vinardo --autobox --threads N
 4. Analyze results with ost and output predictions CSV
 5. Plot Figure 1E with vinardo results added
@@ -21,9 +21,6 @@ import subprocess
 import sys
 from pathlib import Path
 
-import pandas as pd
-from tqdm import tqdm
-
 SCRIPT_DIR = Path(__file__).parent
 GT_DIR = Path("/home/rquiroga/Datasets/runs-n-poses-datasets/ground_truth")
 RECEPTOR_DIR = Path("/home/rquiroga/Datasets/runs-n-poses-datasets/vinardo_inputs/receptors")
@@ -32,6 +29,31 @@ OUTPUT_DIR = Path("/home/rquiroga/Datasets/runs-n-poses-datasets/vinardo_outputs
 ANNOTATIONS = Path("/home/rquiroga/Datasets/runs-n-poses-datasets/annotations.csv")
 OBABEL = "obabel-25-07"
 VINARDOCK = "vinardock-26-04"
+RUNS_N_POSES_PYTHON = "/home/rquiroga/anaconda3/envs/runs_n_poses/bin/python"
+
+
+def _bootstrap_project_python() -> None:
+    """Re-exec into the project interpreter if the current python lacks deps."""
+    if os.environ.get("RUNS_N_POSES_BOOTSTRAPPED") == "1":
+        return
+    try:
+        import pandas  # noqa: F401
+        return
+    except ModuleNotFoundError:
+        pass
+
+    if sys.executable == RUNS_N_POSES_PYTHON:
+        raise
+
+    os.environ["RUNS_N_POSES_BOOTSTRAPPED"] = "1"
+    os.execv(RUNS_N_POSES_PYTHON, [RUNS_N_POSES_PYTHON, str(Path(__file__).resolve()), *sys.argv[1:]])
+
+
+_bootstrap_project_python()
+
+import pandas as pd
+from tqdm import tqdm
+from pandas.errors import EmptyDataError
 
 
 def save_failed_list(failed: list, step_num: int):
@@ -136,36 +158,76 @@ def main():
 
     print(f"Processing {len(system_ids)} systems (threads={args.threads})")
 
-    # Step 1: Prepare receptors
+    # Step 1: Prepare receptors (delegate to external script)
     if args.step in ("1", "all"):
         print("\n=== Step 1: Prepare receptors ===")
         ok_list, fail_list = [], []
         for sid in tqdm(system_ids, desc="Receptors"):
-            s = step1_receptor(sid)
-            if s in ("ok", "skip"): ok_list.append(sid)
-            else: fail_list.append(sid)
+            cmd = [RUNS_N_POSES_PYTHON, str(SCRIPT_DIR / "01_prepare_receptor_pdbqt.py"),
+                   "--ground-truth-dir", str(GT_DIR),
+                   "--output-dir", str(RECEPTOR_DIR),
+                   "--system-id", sid]
+            r = subprocess.run(cmd, capture_output=True, text=True)
+            if r.returncode == 0:
+                ok_list.append(sid)
+            else:
+                fail_list.append(sid)
         print(f"  Done: {len(ok_list)} ok, {len(fail_list)} failed")
         save_failed_list(fail_list, 1)
 
-    # Step 2: Prepare ligands
+    # Step 2: Prepare ligands (delegate to external script)
     if args.step in ("2", "all"):
         print("\n=== Step 2: Prepare ligands ===")
         ok_list, fail_list = [], []
         for sid in tqdm(system_ids, desc="Ligands"):
-            s = step2_ligand(sid)
-            if s.startswith("ok") or s == "skip": ok_list.append(sid)
-            else: fail_list.append(sid)
+            cmd = [RUNS_N_POSES_PYTHON, str(SCRIPT_DIR / "02_prepare_ligand_pdbqt.py"),
+                   "--ground-truth-dir", str(GT_DIR),
+                   "--output-dir", str(LIGAND_DIR),
+                   "--system-id", sid]
+            r = subprocess.run(cmd, capture_output=True, text=True)
+            if r.returncode == 0:
+                ok_list.append(sid)
+            else:
+                fail_list.append(sid)
         print(f"  Done: {len(ok_list)} ok, {len(fail_list)} failed")
         save_failed_list(fail_list, 2)
 
-    # Step 3: Run vinardock
+    # Step 3: Run vinardock (delegate to external script)
     if args.step in ("3", "all"):
         print("\n=== Step 3: Run vinardock ===")
         ok_list, fail_list = [], []
         for sid in tqdm(system_ids, desc="Docking"):
-            s = step3_dock(sid, args.threads)
-            if s.startswith("ok") or s == "skip": ok_list.append(sid)
-            else: fail_list.append(sid)
+            # If resume requested, skip systems where all ligand runs already have a
+            # non-empty log.csv (heuristic for completed docking).
+            if args.resume:
+                lig_dir = LIGAND_DIR / sid
+                if lig_dir.exists():
+                    lig_files = list(lig_dir.glob("*.pdbt"))
+                else:
+                    lig_files = []
+                if lig_files:
+                    all_done = True
+                    for lf in lig_files:
+                        out_folder = OUTPUT_DIR / sid / f"{sid}_{lf.stem}"
+                        log_file = out_folder / "log.csv"
+                        if not (out_folder.exists() and log_file.exists() and log_file.stat().st_size > 50):
+                            all_done = False
+                            break
+                    if all_done:
+                        tqdm.write(f"Skipping {sid} (already docked)")
+                        ok_list.append(sid)
+                        continue
+                        cmd = [RUNS_N_POSES_PYTHON, str(SCRIPT_DIR / "03_run_vinardo.py"),
+                   "--receptor-dir", str(RECEPTOR_DIR),
+                   "--ligand-dir", str(LIGAND_DIR),
+                   "--output-dir", str(OUTPUT_DIR),
+                   "--system-id", sid,
+                   "--threads", str(args.threads)]
+            r = subprocess.run(cmd, capture_output=True, text=True)
+            if r.returncode == 0:
+                ok_list.append(sid)
+            else:
+                fail_list.append(sid)
         print(f"  Done: {len(ok_list)} ok, {len(fail_list)} failed")
         save_failed_list(fail_list, 3)
 
@@ -173,7 +235,7 @@ def main():
     if args.step in ("4", "all"):
         print("\n=== Step 4: Analyze results ===")
         # Run the analysis script (let output pass through for progress bars)
-        cmd = [sys.executable, str(SCRIPT_DIR / "04_analyze_vinardo.py"),
+        cmd = [RUNS_N_POSES_PYTHON, str(SCRIPT_DIR / "04_analyze_vinardo.py"),
                "--system-list", args.system_list]
         if args.start_index > 0:
             cmd += ["--start-index", str(args.start_index)]
@@ -188,12 +250,19 @@ def main():
         # Read the results CSV to determine success/failure
         output_csv = Path("/home/rquiroga/Datasets/runs-n-poses-datasets/predictions/vinardock_2vinardo.csv")
         if output_csv.exists():
-            results_df = pd.read_csv(output_csv)
-            analyzed_systems = set(results_df['target'].unique())
-            fail_list = [sid for sid in system_ids if sid not in analyzed_systems]
-            ok_list = [sid for sid in system_ids if sid in analyzed_systems]
-            print(f"\n  Done: {len(ok_list)} ok, {len(fail_list)} failed")
-            save_failed_list(fail_list, 4)
+            try:
+                results_df = pd.read_csv(output_csv)
+            except EmptyDataError:
+                results_df = None
+            if results_df is not None and 'target' in results_df.columns:
+                analyzed_systems = set(results_df['target'].unique())
+                fail_list = [sid for sid in system_ids if sid not in analyzed_systems]
+                ok_list = [sid for sid in system_ids if sid in analyzed_systems]
+                print(f"\n  Done: {len(ok_list)} ok, {len(fail_list)} failed")
+                save_failed_list(fail_list, 4)
+            else:
+                print("  Analysis produced no parseable output CSV")
+                save_failed_list(system_ids, 4)
         else:
             print("  Analysis failed - no output CSV created")
             save_failed_list(system_ids, 4)
@@ -201,14 +270,11 @@ def main():
     # Step 5: Plot figures
     if args.step in ("5", "all"):
         print("\n=== Step 5: Plot figures ===")
-        # plotting.py needs cmap from conda env, and Agg backend for headless
+        # plotting.py needs cmap/ost from the current environment, and Agg backend for headless
         env = os.environ.copy()
         env["MPLBACKEND"] = "Agg"
-        cmd = [
-            sys.executable, "-m", "conda", "run", "-n", "runs_n_poses",
-            "python", str(SCRIPT_DIR / "05_plot_figure_with_vinardo.py")
-        ]
-        r = subprocess.run(cmd, env=env)  # Let output pass through
+        cmd = [RUNS_N_POSES_PYTHON, str(SCRIPT_DIR / "05_plot_figure_with_vinardo.py")]
+        r = subprocess.run(cmd, env=env)
         if r.returncode == 0:
             print(f"\n  Done: figures generated successfully")
             save_failed_list([], 5)

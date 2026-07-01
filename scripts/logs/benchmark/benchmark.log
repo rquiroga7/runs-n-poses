@@ -1,0 +1,32 @@
+
+
+==== run_full_benchmark @ 2026-06-29 12:03:23 ====
+
+[2026-06-29 12:03:23] $ /home/rquiroga/anaconda3/envs/runs_n_poses/bin/python /home/rquiroga/github/runs-n-poses/scripts/prepare_receptor_meeko.py --input-dir /home/rquiroga/Datasets/runs-n-poses-datasets/symmetry_corrected --output-pdbqt /tmp/meeko_test/recs_pdbqt --output-pdbt /tmp/meeko_test/recs_pdbt --system-list /tmp/test_3sys.csv
+Receptors (Meeko): PDBQT=2, PDBT=2, Fail=0
+
+[2026-06-29 12:03:35] $ /home/rquiroga/anaconda3/envs/runs_n_poses/bin/python /home/rquiroga/github/runs-n-poses/scripts/prepare_ligand_meeko.py --ground-truth-dir /home/rquiroga/Datasets/runs-n-poses-datasets/ground_truth --output-pdbt /tmp/meeko_ligands_pdbt --output-pdbqt /tmp/meeko_ligands_pdbqt --system-info /tmp/test_3sys.csv
+Ligands (Meeko): PDBT=2, PDBQT=2, Fail=0
+
+[2026-06-29 12:03:37] $ /home/rquiroga/anaconda3/envs/runs_n_poses/bin/python /home/rquiroga/github/runs-n-poses/scripts/run_vina_gpu21.py --receptor-dir /home/rquiroga/Datasets/runs-n-poses-datasets/symmetry_receptors_pdbqt --ligand-dir /home/rquiroga/Datasets/runs-n-poses-datasets/symmetry_ligands_pdbqt --output-dir /tmp/dock_test/vina_gpu21 --system-list /tmp/test_3sys.csv --threads 4 --resume
+  No receptor: system_id,proper_ligand_chain
+  No receptor: 5s9y__1__1.A__1.K,1.K
+  No receptor: 5s9z__1__1.A_1.B__1.R,1.R
+Vina-GPU 2.1: OK=0, Skip=0, Fail=3
+
+[2026-06-29 12:03:37] $ /home/rquiroga/anaconda3/envs/runs_n_poses/bin/python /home/rquiroga/github/runs-n-poses/scripts/run_vina_cuda.py --receptor-dir /home/rquiroga/Datasets/runs-n-poses-datasets/symmetry_receptors_pdbqt --ligand-dir /home/rquiroga/Datasets/runs-n-poses-datasets/symmetry_ligands_pdbqt --output-dir /tmp/dock_test/vina_cuda --system-list /tmp/test_3sys.csv --threads 4 --resume
+  No receptor: system_id,proper_ligand_chain
+  No receptor: 5s9y__1__1.A__1.K,1.K
+  No receptor: 5s9z__1__1.A_1.B__1.R,1.R
+Vina-CUDA: OK=0, Skip=0, Fail=3
+
+[2026-06-29 12:03:37] $ /home/rquiroga/anaconda3/envs/runs_n_poses/bin/python /home/rquiroga/github/runs-n-poses/scripts/run_autodock_gpu.py --receptor-dir /tmp/meeko_test/recs_pdbqt --ligand-dir /tmp/meeko_ligands_pdbqt --sym-receptor-dir /home/rquiroga/Datasets/runs-n-poses-datasets/symmetry_corrected --output-dir /tmp/dock_test/autodock_gpu --system-list /tmp/test_3sys.csv --nrun 20 --resume
+  No receptor PDBQT: system_id,proper_ligand_chain
+  No receptor PDBQT: 5s9y__1__1.A__1.K,1.K
+  No receptor PDBQT: 5s9z__1__1.A_1.B__1.R,1.R
+AutoDock-GPU: OK=0, Skip=0, Fail=3
+
+[2026-06-29 12:03:37] $ /home/rquiroga/anaconda3/envs/runs_n_poses/bin/python /home/rquiroga/github/runs-n-poses/scripts/03_run_vina.py --receptor-dir /home/rquiroga/Datasets/runs-n-poses-datasets/symmetry_receptors_pdbqt --ligand-dir /home/rquiroga/Datasets/runs-n-poses-datasets/symmetry_ligands_pdbqt --output-dir /tmp/dock_test/vina_8 --exhaustiveness 8 --threads 4 --executable vina --resume
+Processing 2579 systems...
+Running Vina (exhaustiveness=8) -> /tmp/dock_test/vina_8
+Running Vina (ex=8):   0%|          | 0/2579 [00:00<?, ?it/s]Running Vina (ex=8):   0%|          | 1/2579 [00:18<12:54:33, 18.03s/it]Running Vina (ex=8):   0%|          | 2/2579 [00:34<12:20:26, 17.24s/it]Running Vina (ex=8):   0%|          | 3/2579 [00:40<8:44:21, 12.21s/it] Running Vina (ex=8):   0%|          | 4/2579 [00:52<8:34:06, 11.98s/it]Running Vina (ex=8):   0%|          | 5/2579 [01:00<7:35:29, 10.62s/it]Running Vina (ex=8):   0%|          | 6/2579 [01:13<8:10:17, 11.43s/it]Running Vina (ex=8):   0%|          | 7/2579 [01:22<7:37:18, 10.67s/it]Running Vina (ex=8):   0%|          | 8/2579 [01:33<7:31:13, 10.53s/it]

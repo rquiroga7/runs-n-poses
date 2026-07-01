@@ -1,0 +1,4 @@
+examples/*
+tmp/*
+runs-n-poses-datasets/*
+scripts/__pycache__/*

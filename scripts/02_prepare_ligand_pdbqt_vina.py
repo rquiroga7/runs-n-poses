@@ -21,7 +21,7 @@ def convert_sdf_to_pdbqt(sdf_file: str, output_file: str, obabel_path: str = "ob
         obabel_path,
         sdf_file,
         "-O", output_file,
-        "-h",
+        "-p 7.4",
     ]
 
     try:

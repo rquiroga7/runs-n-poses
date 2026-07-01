@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import annotations
 """
 Step 4 (VINA): Analyze Vina docking results using ost (same as original pipeline).
 
@@ -7,6 +8,7 @@ predictions/posebusters outputs for the `vina` method.
 """
 
 import argparse
+import csv
 import json
 import os
 import subprocess
@@ -17,18 +19,22 @@ import pandas as pd
 from tqdm import tqdm
 import tempfile
 
+from rdkit import Chem
+from rdkit.Chem import inchi
+
 GT_DIR = Path("/home/rquiroga/Datasets/runs-n-poses-datasets/ground_truth")
 
 OUTPUT_DIR = Path("/home/rquiroga/Datasets/runs-n-poses-datasets/autodock_vina_8")
 ANALYSIS_DIR = Path("/home/rquiroga/github/runs-n-poses/examples/analysis/vina")
 ANNOTATIONS = Path("/home/rquiroga/Datasets/runs-n-poses-datasets/annotations.csv")
-OUTPUT_CSV = Path("/home/rquiroga/Datasets/runs-n-poses-datasets/predictions/vina.csv")
+OUTPUT_CSV = Path("/home/rquiroga/Datasets/runs-n-poses-datasets/predictions/autodock_vina_8.csv")
 
-POSEBUSTERS_CSV = Path("/home/rquiroga/Datasets/runs-n-poses-datasets/posebusters_results/vina.csv")
+POSEBUSTERS_CSV = Path("/home/rquiroga/Datasets/runs-n-poses-datasets/posebusters_results/autodock_vina_8.csv")
 
 # Keep other constants same as vinardo analysis
-RDKIT_PYTHON = "/home/rquiroga/anaconda3/envs/runs_n_poses/bin/python"
+RDKIT_PYTHON = "/home/rquiroga/anaconda3/envs/RDKIT/bin/python"
 FIXER_SCRIPT = Path(__file__).parent / "fix_pred_copy_gt_valence.py"
+COORD_FIXER_SCRIPT = Path(__file__).parent / "fix_pred_by_coord_match.py"
 CANONICAL_PB_COLUMNS = [
     "molecule",
     "position",
@@ -63,6 +69,8 @@ CANONICAL_PB_COLUMNS = [
     "sample",
     "ligand_chain",
     "method",
+    "exhaustiveness",
+    "runtime_seconds",
 ]
 
 PB_CHECK_COLUMNS = {
@@ -72,6 +80,62 @@ PB_CHECK_COLUMNS = {
     "internal_energy", "protein-ligand_maximum_distance",
     "minimum_distance_to_protein"
 }
+
+
+def _append_unique_csv_rows(csv_path: Path, df: pd.DataFrame) -> int:
+    if df.empty:
+        return 0
+
+    file_has_header = csv_path.exists() and csv_path.stat().st_size > 0
+    if file_has_header:
+        with csv_path.open(newline="") as f:
+            reader = csv.reader(f)
+            try:
+                header = next(reader)
+            except StopIteration:
+                header = list(df.columns)
+                existing_rows = set()
+                file_has_header = False
+            else:
+                existing_rows = {tuple(row) for row in reader}
+    else:
+        header = list(df.columns)
+        existing_rows = set()
+
+    df_to_write = df.reindex(columns=header)
+    new_rows = []
+    for row in df_to_write.itertuples(index=False, name=None):
+        row_tuple = tuple("" if pd.isna(value) else str(value) for value in row)
+        if row_tuple in existing_rows:
+            continue
+        existing_rows.add(row_tuple)
+        new_rows.append(row_tuple)
+
+    if not new_rows:
+        return 0
+
+    with csv_path.open("a", newline="") as f:
+        writer = csv.writer(f)
+        if not file_has_header:
+            writer.writerow(header)
+        writer.writerows(new_rows)
+    return len(new_rows)
+
+
+def _coerce_pb_bool(value) -> bool:
+    if pd.isna(value):
+        return False
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, (int, float)):
+        return bool(value)
+    if isinstance(value, str):
+        lowered = value.strip().lower()
+        if lowered in {"true", "t", "1", "yes", "y"}:
+            return True
+        if lowered in {"false", "f", "0", "no", "n", ""}:
+            return False
+    return bool(value)
 
 OST = "/home/rquiroga/anaconda3/envs/runs_n_poses/bin/ost"
 PB_VENV_PYTHON = "/home/rquiroga/Datasets/Posebusters/venv/bin/python"
@@ -87,6 +151,84 @@ def convert_pdbt_to_sdf(pdbt_file: str, sdf_file: str) -> bool:
         return r.returncode == 0 and os.path.exists(sdf_file) and os.path.getsize(sdf_file) > 100
     except Exception:
         return False
+
+
+def _run_rdkit_fixer(python_exe: str, script: Path, pred_path: str, gt_path: str) -> str | None:
+    """Run an RDKit-based repair script and return the temporary output path."""
+    tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".sdf")
+    tmp.close()
+    try:
+        cmd = [python_exe, str(script), pred_path, gt_path, tmp.name]
+        r = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
+        if r.returncode == 0 and os.path.exists(tmp.name) and os.path.getsize(tmp.name) > 0:
+            return tmp.name
+    except Exception:
+        pass
+    if os.path.exists(tmp.name):
+        os.remove(tmp.name)
+    return None
+
+
+def _is_inchi_convertible_sdf(sdf_path: str) -> bool:
+    mol = Chem.MolFromMolFile(sdf_path, sanitize=False, removeHs=False)
+    if mol is None:
+        return False
+    try:
+        Chem.SanitizeMol(mol)
+        inchi.MolToInchiKey(mol)
+        return True
+    except Exception:
+        return False
+
+
+def build_posebusters_pred_input(docked_pdbt: str, docked_sdf: str, gt_sdf: str) -> tuple[str, list[str]]:
+    """Build a PoseBusters-ready ligand SDF from the docked pose.
+
+    Preferred path:
+    1. Try copying GT valence/H onto the raw docked SDF first.
+    2. Try graph-matching the obabel-converted docked PDBT against the GT topology.
+    3. Fall back to mapping docked coordinates from the docked PDBT onto the GT topology.
+    4. Only if the repaired output is still chemically invalid, fall back to copying
+       GT valence/H onto that repaired intermediate.
+
+    This keeps the pose coordinates while avoiding spurious PB failures caused by
+    PDBT/SDF conversion or protonation artifacts.
+    """
+    cleanup: list[str] = []
+
+    repaired = _run_rdkit_fixer(RDKIT_PYTHON, FIXER_SCRIPT, docked_sdf, gt_sdf)
+    if repaired:
+        cleanup.append(repaired)
+        if _is_inchi_convertible_sdf(repaired):
+            return repaired, cleanup
+
+    pdbt_sdf = tempfile.NamedTemporaryFile(delete=False, suffix=".sdf")
+    pdbt_sdf.close()
+    if convert_pdbt_to_sdf(docked_pdbt, pdbt_sdf.name):
+        cleanup.append(pdbt_sdf.name)
+        repaired = _run_rdkit_fixer(RDKIT_PYTHON, COORD_FIXER_SCRIPT, pdbt_sdf.name, gt_sdf)
+        if repaired:
+            cleanup.append(repaired)
+            if _is_inchi_convertible_sdf(repaired):
+                return repaired, cleanup
+            fallback = _run_rdkit_fixer(RDKIT_PYTHON, FIXER_SCRIPT, repaired, gt_sdf)
+            if fallback:
+                cleanup.append(fallback)
+                return fallback, cleanup
+    elif os.path.exists(pdbt_sdf.name):
+        os.remove(pdbt_sdf.name)
+
+    repaired = _run_rdkit_fixer(RDKIT_PYTHON, COORD_FIXER_SCRIPT, docked_pdbt, gt_sdf)
+    if repaired:
+        cleanup.append(repaired)
+        if _is_inchi_convertible_sdf(repaired):
+            return repaired, cleanup
+        fallback = _run_rdkit_fixer(RDKIT_PYTHON, FIXER_SCRIPT, repaired, gt_sdf)
+        if fallback:
+            cleanup.append(fallback)
+            return fallback, cleanup
+
+    return docked_sdf, cleanup
 
 
 def run_ost_comparison(receptor_cif: str, docked_sdf: str, gt_sdf: str, output_json: str) -> bool:
@@ -361,42 +503,16 @@ def analyze_system(system_id: str, annotations: pd.DataFrame, run_posebusters_fl
                     metrics = None
 
         if run_posebusters_flag:
-            tmp_pred = None
-            tmp_gt = None
-            tmp_fixed_pred = None
+            pb_pred, tmp_files = build_posebusters_pred_input(
+                str(docked_file),
+                str(docked_sdf),
+                str(gt_sdf),
+            )
+            pb_results = run_posebusters(pb_pred, str(gt_sdf), str(receptor_cif))
             try:
-                tmp_pred = make_rdkit_sanitized_sdf(str(docked_sdf))
-            except Exception:
-                tmp_pred = None
-            try:
-                tmp_gt = make_rdkit_sanitized_sdf(str(gt_sdf))
-            except Exception:
-                tmp_gt = None
-
-            try:
-                tf = tempfile.NamedTemporaryFile(delete=False, suffix=".sdf")
-                tf.close()
-                fixer_cmd = [RDKIT_PYTHON, str(FIXER_SCRIPT), str(docked_sdf), str(gt_sdf), tf.name]
-                r = subprocess.run(fixer_cmd, capture_output=True, text=True, timeout=30)
-                if r.returncode == 0 and os.path.exists(tf.name) and os.path.getsize(tf.name) > 0:
-                    tmp_fixed_pred = tf.name
-                else:
-                    if os.path.exists(tf.name):
-                        os.remove(tf.name)
-                    tmp_fixed_pred = None
-            except Exception:
-                tmp_fixed_pred = None
-
-            use_pred = tmp_fixed_pred if tmp_fixed_pred else (tmp_pred if tmp_pred else str(docked_sdf))
-            use_gt = tmp_gt if tmp_gt else str(gt_sdf)
-            pb_results = run_posebusters(use_pred, use_gt, str(receptor_cif))
-            try:
-                if tmp_pred and os.path.exists(tmp_pred):
-                    os.remove(tmp_pred)
-                if tmp_gt and os.path.exists(tmp_gt):
-                    os.remove(tmp_gt)
-                if tmp_fixed_pred and os.path.exists(tmp_fixed_pred):
-                    os.remove(tmp_fixed_pred)
+                for tmp_path in tmp_files:
+                    if tmp_path and os.path.exists(tmp_path):
+                        os.remove(tmp_path)
             except Exception:
                 pass
 
@@ -413,6 +529,21 @@ def analyze_system(system_id: str, annotations: pd.DataFrame, run_posebusters_fl
             pb_row.setdefault("sample", (metrics.get("sample", 1) if metrics is not None else 1))
             pb_row.setdefault("ligand_chain", chain)
             pb_row.setdefault("method", "vina")
+            # Attach runtime metadata if present
+            try:
+                runtime_file = lig_dir / "runtime.json"
+                if runtime_file.exists():
+                    with open(runtime_file) as rf:
+                        runtime_meta = json.load(rf)
+                    rt = runtime_meta.get("runtime_seconds")
+                    exh = runtime_meta.get("exhaustiveness")
+                    if metrics is not None:
+                        metrics["runtime_seconds"] = rt
+                        metrics["exhaustiveness"] = exh
+                    pb_row["runtime_seconds"] = rt
+                    pb_row["exhaustiveness"] = exh
+            except Exception:
+                pass
             pb_rows.append(pb_row)
         else:
             if metrics is not None:
@@ -482,11 +613,7 @@ def main():
 
         if metrics and run_ost_flag:
             df_sys = pd.DataFrame(metrics)
-            write_header = not OUTPUT_CSV.exists()
-            try:
-                df_sys.to_csv(OUTPUT_CSV, index=False, header=write_header, mode='a')
-            except Exception:
-                df_sys.to_csv(OUTPUT_CSV, index=False)
+            appended = _append_unique_csv_rows(OUTPUT_CSV, df_sys)
             processed_pred_targets.add(sid)
 
         if pb_rows and run_pb_for_system:
@@ -501,15 +628,11 @@ def main():
             for chk in PB_CHECK_COLUMNS:
                 if chk in df_pb.columns:
                     df_pb[chk] = df_pb[chk].fillna(False)
-            write_header_pb = not POSEBUSTERS_CSV.exists()
-            try:
-                df_pb.to_csv(POSEBUSTERS_CSV, index=False, header=write_header_pb, mode='a')
-            except Exception:
-                df_pb.to_csv(POSEBUSTERS_CSV, index=False)
+            _append_unique_csv_rows(POSEBUSTERS_CSV, df_pb)
             processed_pb_targets.add(sid)
 
         if metrics and run_ost_flag:
-            total_metrics += len(df_sys)
+            total_metrics += appended
 
     if total_metrics > 0:
         df_final = pd.read_csv(OUTPUT_CSV)

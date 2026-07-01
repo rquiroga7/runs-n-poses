@@ -1,1 +1,13 @@
-First of all, step 4 does not seem to be running in parallel. Also, we need to modify all the scripts in scripts folder so that in addition to preparing pdbt files and running vinardock --scoring 2vinardo, we also prepare pdbqt files (also with obabel-25-07) and run autodock vina (executable "vina", in path) and also analyze them in step 4, and also add vina results to the plot in place of method Chai-1.
+# Docking methods — implementation status
+[x] Vina (obabel prep, exh=8 + exh=32)
+[x] Vinardo / 2vinardo (obabel prep)
+[x] QuickVina-W
+[x] QuickVina2
+[x] Vina-GPU-2.1 (removed — unreliable)
+[x] Vina-CUDA (removed — unreliable)
+[x] AutoDock-GPU (best-energy + most-populated cluster)
+[x] Vina-meeko (Meeko prep, exh=8 + exh=32)
+[x] Vinardo-meeko (Meeko prep)
+[x] GNINA (working via LD_PRELOAD, run_gnina.py, ~4.4s/system)
+[x] rDock (working, run_rdock.py, ~0.5s/system)
+[ ] LeDock (config format unknown — binary gives no useful error output)

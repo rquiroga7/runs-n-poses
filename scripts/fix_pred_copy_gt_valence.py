@@ -8,15 +8,16 @@ from rdkit import Chem
 
 
 def load_first_mol(path):
-    suppl = Chem.SDMolSupplier(path, removeHs=False)
-    for m in suppl:
-        if m is not None:
-            return m
-    # try with removeHs True
-    suppl = Chem.SDMolSupplier(path, removeHs=True)
-    for m in suppl:
-        if m is not None:
-            return m
+    for sanitize in (False, True):
+        suppl = Chem.SDMolSupplier(path, sanitize=sanitize, removeHs=False)
+        for m in suppl:
+            if m is not None:
+                return m
+    for sanitize in (False, True):
+        suppl = Chem.SDMolSupplier(path, sanitize=sanitize, removeHs=True)
+        for m in suppl:
+            if m is not None:
+                return m
     return None
 
 

@@ -1,130 +1,125 @@
-# Vinardo Docking Pipeline Scripts
+# Docking Benchmark Scripts
 
-This directory contains scripts to run the 2vinardo-mar5 docking pipeline and analyze the results in the context of the Runs N' Poses benchmark.
+Scripts to run the full docking benchmark on the Runs N' Poses single-ligand dataset
+(1426 systems) and compare across docking programs.
 
-## Overview
+## Layout
 
-The pipeline consists of 5 steps:
+```
+01_prepare_receptor_pdbqt*.py   — Obabel-based receptor prep (CIF→PDBQT)
+02_prepare_ligand_pdbqt*.py      — Obabel-based ligand prep (SDF→PDBQT)
+03_run_vina.py                   — AutoDock Vina runner
+03_run_vinardo.py                — Vinardo (2vinardo-mar5) runner
+04_analyze_vinardo.py            — Vinardo-specific analysis from obabel prep
+04_analyze_vina.py / _32.py      — Vina-specific analysis (exhaustiveness 8/32)
+04_analyze_docking.py            — Generic analysis (vina / vinardo / adgpu families)
+05_plot_figure_with_*.py         — Figure 1E reproduction for each method
+06_analyze_benchmark.py          — Speedup-vs-redocking scatter plots + summary
+07_investigate_vinardock_failures.py — Failure investigation report
+run_full_benchmark.py            — Orchestrator (receptor,ligand,dock,analyze steps)
+run_full_benchmark_bg.sh         — Background launcher for run_full_benchmark.py
 
-1. **Prepare receptor PDBQT files** - Convert receptor.cif files to PDBQT format
-2. **Prepare ligand PDBQT files** - Convert ligand SMILES/SDF files to PDBQT format  
-3. **Run 2vinardo-mar5 docking** - Execute the docking for each receptor-ligand pair
-4. **Analyze results** - Score predictions and output in the same format as other methods
-5. **Plot figures** - Create comparison plots including vinardock results
+prepare_ligand_meeko.py          — Meeko-based ligand prep (SDF→PDBT + PDBQT)
+prepare_receptor_meeko.py        — Meeko-based receptor prep (PDB→PDBT + PDBQT)
+prepare_symmetry_*.py            — Obabel-based prep for symmetry-corrected inputs
+symmetry_receptors_log.csv       — Log of symmetry generation
+
+run_qvina_w.py                   — QuickVina-W runner
+run_quickvina2.py                — QuickVina2 (scip-qvina) runner
+run_vina_gpu21.py                — Vina-GPU 2.1 runner
+run_vina_cuda.py                 — Vina-CUDA runner
+run_vinardo_symmetry.py          — Vinardo runner for symmetry-corrected inputs
+run_autodock_gpu.py              — AutoDock-GPU runner (uses Meeko-prepared inputs)
+run_vina_symmetry.py             — Vina runner for symmetry-corrected inputs
+
+*_symmetry.py                    — Runners for the symmetry-corrected pipeline
+```
 
 ## Prerequisites
 
-- `obabel-25-07` - OpenBabel for file format conversion
-- `2vinardo-mar5_autobox` - The docking executable (must be in PATH)
-- `ost` - OpenStructure for structure comparison (must be in PATH)
-- Python 3.8+ with packages from `environment.yaml`
+- `obabel-25-07` — OpenBabel for file conversion
+- `vina`, `qvina-w`, `QuickVina2` — in PATH or at configured paths
+- `vinardock-26-{mar,04}` — in `~/.local/bin/`
+- `AutoDock-GPU`, `autogrid4` — at configured paths
+- `Vina-CUDA_v1.1`, `AutoDock-Vina-GPU-2.1` — at configured paths
+- `/home/rquiroga/github/Meeko` — Meeko for PDBT/PDBQT prep
+- `/home/rquiroga/anaconda3/envs/runs_n_poses/bin/ost` — OpenStructure
+- RDKit conda env at `/home/rquiroga/anaconda3/envs/RDKIT`
+- PoseBusters venv at `/home/rquiroga/Datasets/Posebusters/venv`
 
-## Usage
+## Input Data
 
-### Step 1: Prepare Receptor PDBQT Files
+Symmetry-corrected receptors and obabel-prepared ligands already exist:
 
-```bash
-python 01_prepare_receptor_pdbqt.py \
-    --ground-truth-dir /home/rquiroga/Datasets/runs-n-poses-datasets/ground_truth \
-    --output-dir /home/rquiroga/Datasets/runs-n-poses-datasets/vinardo_inputs/receptors \
-    --annotations /home/rquiroga/Datasets/runs-n-poses-datasets/annotations.csv
+```
+/home/rquiroga/Datasets/runs-n-poses-datasets/
+  symmetry_corrected/        — PDB files of symmetry-corrected complexes (2178)
+  symmetry_receptors_pdbqt/  — Obabel-prepared PDBQT receptors
+  symmetry_receptors_pdbt/   — Obabel-prepared PDBT receptors
+  symmetry_ligands_pdbqt/    — Obabel-prepared PDBQT ligands
+  symmetry_ligands_pdbt/     — Obabel-prepared PDBT ligands
+  ground_truth/              — Original PLINDER ground truth (1426 single-ligand)
 ```
 
-This converts receptor.cif files to PDBQT format using `obabel-25-07` with `-xc -xr` flags to handle cofactors and metals properly.
+The benchmark runs on the 1426 single-ligand systems listed in
+`scripts/single_ligand_systems_symmetry.txt`.
 
-### Step 2: Prepare Ligand PDBQT Files
+## Methods
 
-```bash
-python 02_prepare_ligand_pdbqt.py \
-    --annotations /home/rquiroga/Datasets/runs-n-poses-datasets/annotations.csv \
-    --ground-truth-dir /home/rquiroga/Datasets/runs-n-poses-datasets/ground_truth \
-    --output-dir /home/rquiroga/Datasets/runs-n-poses-datasets/vinardo_inputs/ligands
-```
+| Method | Engine | Receptor Prep | Ligand Prep | Executable |
+|--------|--------|---------------|-------------|------------|
+| autodock_vina_8 | Vina 1.2 | obabel | obabel | `vina` (exh=8) |
+| autodock_vina_32 | Vina 1.2 | obabel | obabel | `vina` (exh=32) |
+| qvina_w | QuickVina-W | obabel | obabel | `qvina-w` |
+| quickvina2 | QuickVina2 | obabel | obabel | `QuickVina2` |
+| vina_gpu21 | Vina-GPU 2.1 | obabel | obabel | `AutoDock-Vina-GPU-2-1` |
+| vina_cuda | Vina-CUDA 1.1 | obabel | obabel | `Vina-CUDA_v1.1` |
+| autodock_gpu | AutoDock-GPU | Meeko | Meeko | `AutoDock-GPU` + `autogrid4` |
+| vina_meeko | Vina 1.2 | Meeko | Meeko | `vina` (exh=8) |
+| vinardock_2vinardo | 2vinardo-mar5 | obabel | obabel | `vinardock-26-mar` |
+| vinardock_meeko | 2vinardo-mar5 | Meeko PDBT | Meeko PDBT | `vinardock-26-mar` |
 
-This creates PDBQT files for each ligand from the SMILES strings in annotations.csv (or from ground truth SDF files if SMILES conversion fails).
-
-### Step 3: Run 2vinardo-mar5 Docking
-
-```bash
-python 03_run_vinardo.py \
-    --receptor-dir /home/rquiroga/Datasets/runs-n-poses-datasets/vinardo_inputs/receptors \
-    --ligand-dir /home/rquiroga/Datasets/runs-n-poses-datasets/vinardo_inputs/ligands \
-    --output-dir /home/rquiroga/Datasets/runs-n-poses-datasets/vinardo_outputs
-```
-
-This runs `vinardock-26-mar --scoring 2vinardo --autobox` for each receptor-ligand pair.
-No config file needed.
-
-**Note**: `vinardock-26-04` segfaults with these inputs. Use `vinardock-26-mar` instead (restored from Trash).
-
-### Step 4: Analyze Vinardo Results
+## Running the Full Benchmark
 
 ```bash
-python 04_analyze_vinardo.py \
-    --vinardo-outputs /home/rquiroga/Datasets/runs-n-poses-datasets/vinardo_outputs \
-    --ground-truth /home/rquiroga/Datasets/runs-n-poses-datasets/ground_truth \
-    --annotations /home/rquiroga/Datasets/runs-n-poses-datasets/annotations.csv \
-    --inputs-json /home/rquiroga/Datasets/runs-n-poses-datasets/inputs.json \
-    --output /home/rquiroga/Datasets/runs-n-poses-datasets/predictions/vinardock_2vinardo.csv
+# Background launcher (recommended):
+bash scripts/run_full_benchmark_bg.sh
+
+# Or run the orchestrator directly:
+.venv/bin/python scripts/run_full_benchmark.py \
+    --steps receptor,ligand,dock,analyze \
+    --threads 8 --resume
+
+# The orchestrator runs:
+#   1. prepare_receptor_meeko.py   → meeko_receptors_{pdbqt,pdbt}/
+#   2. prepare_ligand_meeko.py     → meeko_ligands_{pdbqt,pdbt}/
+#   3. All 10 docking programs
+#   4. 04_analyze_docking.py       → predictions/<method>.csv + posebusters/<method>.csv
 ```
 
-This scores the vinardo predictions against ground truth using `ost compare-ligand-structures` (following the pattern in `examples/utils/analyze_models_*.sh` and `extract_scores.ipynb`) and outputs a CSV in the same format as the other prediction methods.
+Logs: `scripts/logs/benchmark/benchmark.log`, `scripts/logs/benchmark/pid`.
 
-### Step 5: Plot Figures with Vinardo Results
+<rant>
+Vina-GPU 2.1 and Vina-CUDA are known to fail on many systems (large boxes,
+GPU resource limits). These failures are logged and skipped but expected.
+</rant>
+
+## Analyzing Results
 
 ```bash
-python 05_plot_figure_with_vinardo.py \
-    --predictions-dir /home/rquiroga/Datasets/runs-n-poses-datasets/predictions \
-    --annotations /home/rquiroga/Datasets/runs-n-poses-datasets/annotations.csv \
-    --output /home/rquiroga/github/runs-n-poses/figures/figure_1e_with_vinardo.png \
-    --comparison-output /home/rquiroga/github/runs-n-poses/figures/figure_1e_comparison.png
+# Speedup vs redocking% scatter + bar charts + failure analysis:
+.venv/bin/python scripts/06_analyze_benchmark.py
+
+# In-depth vinardock failure report:
+.venv/bin/python scripts/07_investigate_vinardock_failures.py
 ```
 
-This reproduces Figure 1 Panel E from the paper with vinardock results added.
-
-## Running the Full Pipeline
-
-To run all steps sequentially:
-
-```bash
-# Step 1
-python 01_prepare_receptor_pdbqt.py
-
-# Step 2
-python 02_prepare_ligand_pdbqt.py
-
-# Step 3
-python 03_run_vinardo.py
-
-# Step 4
-python 04_analyze_vinardo.py
-
-# Step 5
-python 05_plot_figure_with_vinardo.py
-```
-
-Each script supports a `--system-id` flag to process only a specific system for testing:
-
-```bash
-python 01_prepare_receptor_pdbqt.py --system-id "5s9l__1__1.A__1.H_1.I"
-python 02_prepare_ligand_pdbqt.py --system-id "5s9l__1__1.A__1.H_1.I"
-python 03_run_vinardo.py --system-id "5s9l__1__1.A__1.H_1.I"
-python 04_analyze_vinardo.py --system-id "5s9l__1__1.A__1.H_1.I"
-```
+Output goes to `figures/benchmark_*.png` and `figures/vinardock_failure_investigation.md`.
 
 ## Output Files
 
-- `vinardo_inputs/receptors/` - Receptor PDBQT files
-- `vinardo_inputs/ligands/` - Ligand PDBQT files
-- `vinardo_outputs/` - Raw docking output files
-- `vinardo_analysis/` - Intermediate JSON scoring files
-- `predictions/vinardock_2vinardo.csv` - Final predictions CSV
-- `figures/figure_1e_with_vinardo.png` - Figure with vinardo results
-- `figures/figure_1e_comparison.png` - Line plot comparison
-
-## Notes
-
-- The pipeline uses the same scoring methodology as the original Runs N' Poses benchmark
-- Vinardo doesn't produce iPTM scores (these are set to None in the output)
-- The `config.fijo` file contains the Vinardo scoring parameters and enables autobox mode
-- All scripts backup existing files before overwriting (`.bkp` extension)
+- `predictions/<method>.csv` — Prediction accuracy metrics
+- `posebusters_results/<method>.csv` — PoseBusters physical plausibility
+- `examples/analysis/<method>/` — OST comparison JSONs (cached)
+- `figures/benchmark_*.png` — Benchmark plots
+- `figures/vinardock_failure_*.csv|md` — Vinardock failure analysis

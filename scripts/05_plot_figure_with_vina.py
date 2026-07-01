@@ -97,9 +97,9 @@ def load_data(data_dir: Path, methods: list):
         if "pred_pocket_f1" not in df.columns:
             df["pred_pocket_f1"] = 1
         keep_columns = [c for c in keep_columns if c in df.columns]
-        full_datasets[method] = (
-            df[keep_columns].rename(columns={"target": "system_id"}).reset_index(drop=True)
-        )
+        full_datasets[method] = df[keep_columns].rename(columns={"target": "system_id"}).reset_index(drop=True)
+        full_datasets[method]["system_id"] = full_datasets[method]["system_id"].astype(str)
+        full_datasets[method]["ligand_instance_chain"] = full_datasets[method]["ligand_instance_chain"].astype(str)
         full_datasets[method]["group_key"] = (
             full_datasets[method]["system_id"]
             + "__"
@@ -114,6 +114,8 @@ def load_data(data_dir: Path, methods: list):
             .reset_index(drop=True)
         )
         if method in bust_dfs:
+            bust_dfs[method]["system_id"] = bust_dfs[method]["system_id"].astype(str)
+            bust_dfs[method]["ligand_instance_chain"] = bust_dfs[method]["ligand_instance_chain"].astype(str)
             full_datasets[method] = full_datasets[method].merge(
                 bust_dfs[method][["system_id", "ligand_instance_chain", "pb_success"]],
                 on=["system_id", "ligand_instance_chain"],
@@ -235,6 +237,7 @@ def main():
         if col.startswith(prefix) and col[len(prefix):] not in ("max", "average")
     ]))
     methods_in_df = [m for m in base_methods if m in methods_in_df]
+    common_subset_methods = [m for m in base_methods if f"lddt_pli_{m}" in results_df_top.columns]
 
     results_df_top["lddt_pli_max"] = np.nanmax(
         results_df_top[

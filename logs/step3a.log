@@ -1,0 +1,3 @@
+  FAIL: 7onf__1__1.A_2.A__1.C: Timeout
+  WARN: runs-n-poses-datasets/symmetry_corrected/8c3i__1__1.B__1.D/8c3i__1__1.B__1.D_receptor_symm.pdb not found
+Receptor PDBT: OK=2176, Skip=0, Fail=2

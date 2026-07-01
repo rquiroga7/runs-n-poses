@@ -16,6 +16,8 @@ import os
 import subprocess
 import sys
 from pathlib import Path
+import time
+import json
 
 import pandas as pd
 from tqdm import tqdm
@@ -45,6 +47,7 @@ def run_vinardock(receptor_file: str, ligand_file: str, output_dir: str,
     ]
 
     try:
+        start_time = time.time()
         result = subprocess.run(
             cmd,
             capture_output=True,
@@ -52,6 +55,35 @@ def run_vinardock(receptor_file: str, ligand_file: str, output_dir: str,
             timeout=600,
             cwd=str(system_output_dir)
         )
+        end_time = time.time()
+        elapsed = end_time - start_time
+
+        # Save stdout/stderr to a log file for diagnostics
+        log_txt = out_folder / "log.txt"
+        try:
+            with open(log_txt, 'w') as fh:
+                if result.stdout:
+                    fh.write('STDOUT:\n')
+                    fh.write(result.stdout)
+                if result.stderr:
+                    fh.write('\nSTDERR:\n')
+                    fh.write(result.stderr)
+        except Exception:
+            pass
+
+        # Record runtime information for later analysis
+        try:
+            run_meta = {
+                "method": "vinardock",
+                "threads": int(threads),
+                "returncode": result.returncode,
+                "runtime_seconds": float(elapsed),
+            }
+            runtime_file = out_folder / "runtime.json"
+            with open(runtime_file, 'w') as fh:
+                json.dump(run_meta, fh)
+        except Exception:
+            pass
 
         if result.returncode != 0:
             print(f"Warning: vinardock failed for {system_id} {ligand_chain}:")
@@ -145,7 +177,7 @@ def main():
     parser.add_argument(
         "--executable",
         type=str,
-        default="/home/rquiroga/.local/bin/vinardock-26-mar",
+        default="vinardock-26-04",
         help="Path to vinardock executable"
     )
     parser.add_argument(

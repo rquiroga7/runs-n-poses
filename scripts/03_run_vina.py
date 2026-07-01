@@ -19,6 +19,8 @@ import sys
 from pathlib import Path
 from tqdm import tqdm
 import math
+import time
+import json
 
 
 def parse_pdb_coordinates(pdbfile: str):
@@ -44,10 +46,6 @@ def parse_pdb_coordinates(pdbfile: str):
 
 
 def compute_autobox_from_receptor(receptor_file: str, margin: float = 10.0):
-    """
-    Compute a simple box (center_x,y,z and size_x,y,z) covering receptor atoms
-    expanded by `margin` angstroms.
-    """
     coords = parse_pdb_coordinates(receptor_file)
     if not coords:
         return None
@@ -57,26 +55,38 @@ def compute_autobox_from_receptor(receptor_file: str, margin: float = 10.0):
     xmin, xmax = min(xs), max(xs)
     ymin, ymax = min(ys), max(ys)
     zmin, zmax = min(zs), max(zs)
-
     cx = (xmin + xmax) / 2.0
     cy = (ymin + ymax) / 2.0
     cz = (zmin + zmax) / 2.0
+    sx = max((xmax - xmin) + margin, 5.0)
+    sy = max((ymax - ymin) + margin, 5.0)
+    sz = max((zmax - zmin) + margin, 5.0)
+    return cx, cy, cz, sx, sy, sz
 
-    sx = (xmax - xmin) + margin
-    sy = (ymax - ymin) + margin
-    sz = (zmax - zmin) + margin
 
-    # Vina requires sizes > 0; enforce minima
-    sx = max(sx, 5.0)
-    sy = max(sy, 5.0)
-    sz = max(sz, 5.0)
-
+def compute_autobox_from_ligand(ligand_file: str, margin: float = 22.0):
+    """Compute box from ligand coordinates (much smaller, avoids huge boxes)."""
+    coords = parse_pdb_coordinates(ligand_file)
+    if not coords:
+        return None
+    xs = [c[0] for c in coords]
+    ys = [c[1] for c in coords]
+    zs = [c[2] for c in coords]
+    cx = (min(xs) + max(xs)) / 2.0
+    cy = (min(ys) + max(ys)) / 2.0
+    cz = (min(zs) + max(zs)) / 2.0
+    sx = max((max(xs) - min(xs)) + margin, 22.0)
+    sy = max((max(ys) - min(ys)) + margin, 22.0)
+    sz = max((max(zs) - min(zs)) + margin, 22.0)
     return cx, cy, cz, sx, sy, sz
 
 
 def run_vina(receptor_file: str, ligand_file: str, output_dir: str,
              system_id: str, ligand_chain: str, executable: str = "vina",
-             threads: int = 4, exhaustiveness: int = 8, margin: float = 10.0) -> bool:
+             threads: int = 4, exhaustiveness: int = 8, margin: float = 10.0,
+             box_from_ligand: bool = False,
+             box_cx: float = None, box_cy: float = None, box_cz: float = None,
+             box_sx: float = None, box_sy: float = None, box_sz: float = None) -> bool:
     system_output_dir = Path(output_dir) / system_id
     system_output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -106,11 +116,20 @@ def run_vina(receptor_file: str, ligand_file: str, output_dir: str,
     except Exception:
         pass
 
-    box = compute_autobox_from_receptor(receptor_file, margin=margin)
-    if box is None:
-        print(f"Warning: failed to compute box for {system_id}")
-        return False
-    cx, cy, cz, sx, sy, sz = box
+    if box_cx is not None:
+        cx, cy, cz, sx, sy, sz = box_cx, box_cy, box_cz, box_sx, box_sy, box_sz
+    elif box_from_ligand:
+        box = compute_autobox_from_ligand(ligand_file, margin=22.0)
+        if box is None:
+            print(f"Warning: failed to compute box for {system_id}")
+            return False
+        cx, cy, cz, sx, sy, sz = box
+    else:
+        box = compute_autobox_from_receptor(receptor_file, margin=margin)
+        if box is None:
+            print(f"Warning: failed to compute box for {system_id}")
+            return False
+        cx, cy, cz, sx, sy, sz = box
 
     cmd = [
         executable,
@@ -139,6 +158,7 @@ def run_vina(receptor_file: str, ligand_file: str, output_dir: str,
     ]
 
     try:
+        start_time = time.time()
         result = subprocess.run(
             cmd,
             capture_output=True,
@@ -146,6 +166,8 @@ def run_vina(receptor_file: str, ligand_file: str, output_dir: str,
             timeout=900,
             cwd=str(system_output_dir),
         )
+        end_time = time.time()
+        elapsed = end_time - start_time
 
         # Save stdout/stderr to log_file for diagnostics
         try:
@@ -156,6 +178,20 @@ def run_vina(receptor_file: str, ligand_file: str, output_dir: str,
                 if result.stderr:
                     fh.write('\nSTDERR:\n')
                     fh.write(result.stderr)
+        except Exception:
+            pass
+
+        # Record runtime information for later analysis
+        try:
+            run_meta = {
+                "method": "vina",
+                "exhaustiveness": exhaustiveness,
+                "returncode": result.returncode,
+                "runtime_seconds": float(elapsed),
+            }
+            runtime_file = out_folder / "runtime.json"
+            with open(runtime_file, 'w') as fh:
+                json.dump(run_meta, fh)
         except Exception:
             pass
 
@@ -181,7 +217,10 @@ def run_vina(receptor_file: str, ligand_file: str, output_dir: str,
 
 def process_system(system_id: str, receptor_dir: Path, ligand_dir: Path,
                    output_dir: Path, executable: str, threads: int = 4,
-                   exhaustiveness: int = 8) -> bool:
+                   exhaustiveness: int = 8, resume: bool = False,
+                   box_from_ligand: bool = False,
+                   box_cx: float = None, box_cy: float = None, box_cz: float = None,
+                   box_sx: float = None, box_sy: float = None, box_sz: float = None) -> bool:
     receptor_file = receptor_dir / system_id / f"{system_id}_receptor.pdbqt"
     if not receptor_file.exists():
         candidates = list((receptor_dir / system_id).glob("*receptor*"))
@@ -206,6 +245,19 @@ def process_system(system_id: str, receptor_dir: Path, ligand_dir: Path,
         ligand_chain = ligand_file.stem
         print(f"Running vina for {system_id}, ligand {ligand_chain}...")
 
+        out_folder = Path(output_dir) / system_id / f"{system_id}_{ligand_chain}"
+        out_pdbqt = out_folder / "out.pdbqt"
+        log_file = out_folder / "log.txt"
+
+        if resume and out_pdbqt.exists() and out_pdbqt.stat().st_size > 0:
+            print(f"  Skipping (exists) {system_id} {ligand_chain}")
+            success = True
+            continue
+        if resume and log_file.exists() and log_file.stat().st_size > 50:
+            print(f"  Skipping (log exists) {system_id} {ligand_chain}")
+            success = True
+            continue
+
         if run_vina(
             str(receptor_file),
             str(ligand_file),
@@ -215,6 +267,9 @@ def process_system(system_id: str, receptor_dir: Path, ligand_dir: Path,
             executable,
             threads,
             exhaustiveness,
+            box_from_ligand=box_from_ligand,
+            box_cx=box_cx, box_cy=box_cy, box_cz=box_cz,
+            box_sx=box_sx, box_sy=box_sy, box_sz=box_sz,
         ):
             success = True
         else:
@@ -251,14 +306,28 @@ def main():
         default=8,
         help="Vina exhaustiveness value (higher -> more thorough search)",
     )
+    parser.add_argument(
+        "--resume",
+        action="store_true",
+        help="Skip ligand runs when output exists (out.pdbqt non-empty or log.txt present)",
+    )
     parser.add_argument("--system-id", type=str, default=None)
     parser.add_argument("--annotations", type=str, default="/home/rquiroga/Datasets/runs-n-poses-datasets/annotations.csv")
     parser.add_argument("--threads", type=int, default=4)
+    parser.add_argument("--center-x", type=float, default=None, help="Box center X (overrides autobox)")
+    parser.add_argument("--center-y", type=float, default=None)
+    parser.add_argument("--center-z", type=float, default=None)
+    parser.add_argument("--size-x", type=float, default=None, help="Box size X (overrides autobox)")
+    parser.add_argument("--size-y", type=float, default=None)
+    parser.add_argument("--size-z", type=float, default=None)
 
     args = parser.parse_args()
 
     receptor_dir = Path(args.receptor_dir)
     ligand_dir = Path(args.ligand_dir)
+    # allow comma-separated list of exhaustiveness values
+    exh_values = [int(x) for x in str(args.exhaustiveness).split(",") if str(x).strip()]
+
     output_dir = Path(args.output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -276,25 +345,46 @@ def main():
 
     print(f"Processing {len(system_ids)} systems...")
 
+    # Load pre-computed boxes
+    boxes_path = Path(__file__).parent / "boxes.json"
+    if boxes_path.exists():
+        import json
+        boxes = json.loads(boxes_path.read_text())
+    else:
+        boxes = {}
+
     success_count = 0
     fail_count = 0
 
-    for system_id in tqdm(system_ids, desc="Running Vina"):
-        if process_system(
-            system_id,
-            receptor_dir,
-            ligand_dir,
-            output_dir,
-            args.executable,
-            args.threads,
-            args.exhaustiveness,
-        ):
-            success_count += 1
+    for exh in exh_values:
+        if len(exh_values) == 1:
+            out_dir_ex = output_dir
         else:
-            fail_count += 1
+            out_dir_ex = output_dir.parent / f"{output_dir.name}_{exh}"
+        out_dir_ex.mkdir(parents=True, exist_ok=True)
+
+        print(f"Running Vina (exhaustiveness={exh}) -> {out_dir_ex}")
+
+        for system_id in tqdm(system_ids, desc=f"Running Vina (ex={exh})"):
+            b = boxes.get(system_id, {})
+            if process_system(
+                system_id,
+                receptor_dir,
+                ligand_dir,
+                out_dir_ex,
+                args.executable,
+                args.threads,
+                exh,
+                resume=args.resume,
+                box_cx=b.get("center_x"), box_cy=b.get("center_y"), box_cz=b.get("center_z"),
+                box_sx=b.get("size_x"), box_sy=b.get("size_y"), box_sz=b.get("size_z"),
+            ):
+                success_count += 1
+            else:
+                fail_count += 1
 
     print(f"\nDone! Success: {success_count}, Failed: {fail_count}")
-    print(f"Output directory: {output_dir}")
+    print(f"Output directory (base): {output_dir}")
 
 
 if __name__ == "__main__":
