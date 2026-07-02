@@ -22,13 +22,22 @@ import json
 import pandas as pd
 from tqdm import tqdm
 
+sys.path.insert(0, str(Path(__file__).parent))
+import box_util
+
+GT_DIR = Path("/home/rquiroga/Datasets/runs-n-poses-datasets/ground_truth")
+
 
 def run_vinardock(receptor_file: str, ligand_file: str, output_dir: str,
                   system_id: str, ligand_chain: str,
                   executable: str = "vinardock-26-04",
-                  threads: int = 4) -> bool:
+                  threads: int = 4,
+                  box_override: dict | None = None) -> bool:
     """
-    Run vinardock-26-04 --scoring 2vinardo --autobox for a single receptor-ligand pair.
+    Run vinardock-26-04 --scoring 2vinardo for a single receptor-ligand pair.
+
+    Box is computed from the ground-truth ligand SDF (``box_util.get_box_for_system``)
+    unless ``box_override`` is provided.
     """
     system_output_dir = Path(output_dir) / system_id
     system_output_dir.mkdir(parents=True, exist_ok=True)
@@ -36,13 +45,23 @@ def run_vinardock(receptor_file: str, ligand_file: str, output_dir: str,
     out_folder = system_output_dir / f"{system_id}_{ligand_chain}"
     out_folder.mkdir(exist_ok=True)
 
+    box = box_override or box_util.get_box_for_system(system_id, ligand_chain, gt_dir=GT_DIR)
+    if box is None:
+        print(f"  No box for {system_id} {ligand_chain} (missing ground-truth SDF)")
+        return False
+
     cmd = [
         executable,
         "--scoring", "2vinardo",
         "--receptor", receptor_file,
         "--ligand", ligand_file,
         "--out", str(out_folder),
-        "--autobox",
+        "--center_x", str(box["center_x"]),
+        "--center_y", str(box["center_y"]),
+        "--center_z", str(box["center_z"]),
+        "--size_x", str(box["size_x"]),
+        "--size_y", str(box["size_y"]),
+        "--size_z", str(box["size_z"]),
         "--threads", str(threads)
     ]
 

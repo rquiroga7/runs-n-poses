@@ -19,14 +19,33 @@ import subprocess
 import time
 from pathlib import Path
 
+import sys
+sys.path.insert(0, str(Path(__file__).parent))
+import box_util
+
 VINARDO = "vinardock-26-04"
+GT_DIR = Path("/home/rquiroga/Datasets/runs-n-poses-datasets/ground_truth")
+
+# Early-termination / search-thoroughness defaults
+MIN_RMSD_ITERS_T1 = 10
+CARTESIAN_RMSD_THRESHOLD_TIER1 = 0.5
 
 
-def run_vinardock(receptor_file, ligand_file, output_dir, sys_id, lig_chain, threads=8):
-    """Run Vinardo docking for a single receptor-ligand pair."""
+def run_vinardock(receptor_file, ligand_file, output_dir, sys_id, lig_chain, threads=8,
+                  box_override: dict | None = None):
+    """Run Vinardo docking for a single receptor-ligand pair.
+
+    Box is computed from the ground-truth ligand SDF (``box_util.get_box_for_system``)
+    unless ``box_override`` is provided.
+    """
     output_dir = Path(output_dir).resolve()
     out_folder = output_dir / sys_id / f"{sys_id}_{lig_chain}"
     out_folder.mkdir(parents=True, exist_ok=True)
+
+    box = box_override or box_util.get_box_for_system(sys_id, lig_chain, gt_dir=GT_DIR)
+    if box is None:
+        print(f"  No box for {sys_id} {lig_chain} (missing ground-truth SDF)")
+        return False
 
     cmd = [
         VINARDO,
@@ -34,8 +53,15 @@ def run_vinardock(receptor_file, ligand_file, output_dir, sys_id, lig_chain, thr
         "--receptor", receptor_file,
         "--ligand", ligand_file,
         "--out", str(out_folder),
-        "--autobox",
+        "--center_x", str(box["center_x"]),
+        "--center_y", str(box["center_y"]),
+        "--center_z", str(box["center_z"]),
+        "--size_x", str(box["size_x"]),
+        "--size_y", str(box["size_y"]),
+        "--size_z", str(box["size_z"]),
         "--threads", str(threads),
+        "--min_rmsd_iters_t1", str(MIN_RMSD_ITERS_T1),
+        "--cartesian_rmsd_threshold_tier1", str(CARTESIAN_RMSD_THRESHOLD_TIER1),
     ]
 
     try:

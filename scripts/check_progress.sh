@@ -53,12 +53,18 @@ print(len(s))
     fi
     printf "%-20s %6s docked  %6s analyzed\n" "$m" "$dock_str" "$ana_str"
 done
-echo "=== Meeko prep ==="
-for d in meeko_receptors_pdbqt meeko_receptors_pdbt meeko_ligands_pdbqt meeko_ligands_pdbt; do
-    n=$(ls "$DATASETS/$d" 2>/dev/null | wc -l)
-    printf "%-25s %4d systems\n" "$d" "$n"
-done
-
-echo ""
-echo "=== System processes ==="
-ps aux | grep -E "run_full_benchmark|03_run_vina|run_qvina|run_quickvina|run_vina_gpu|run_vina_cuda|run_autodock_gpu|run_vinardo|vinardock|mk_prepare" | grep -v grep | awk '{print $11, $12, $13}' | sort -u | head -5
+echo "=== Active processes ==="
+ps aux | grep -E "run_full_benchmark|03_run_vina|run_qvina|run_quickvina|run_autodock_gpu|run_vinardo|vinardock|mk_prepare|run_gnina|run_rdock" | grep -v grep | awk '{
+    cmd = $11
+    if (cmd ~ /mk_prepare_receptor/) print "  Meeko: PDBQT prep (autodock_gpu GPF)"
+    else if (cmd ~ /mk_prepare_pdbt_receptor/) print "  Meeko: PDBT receptor prep"
+    else if (cmd ~ /mk_prepare_ligand/) print "  Meeko: ligand prep"
+    else if (cmd ~ /run_autodock_gpu/) print "  AutoDock-GPU docking"
+    else if (cmd ~ /03_run_vina/) print "  Vina docking"
+    else if (cmd ~ /run_qvina/) print "  QuickVina-W docking"
+    else if (cmd ~ /run_vinardo/) print "  Vinardo docking"
+    else if (cmd ~ /vinardock/) print "  Vinardo docking"
+    else if (cmd ~ /run_gnina/) print "  GNINA docking"
+    else if (cmd ~ /run_rdock/) print "  rDock docking"
+    else print "  " cmd
+}' | sort -u | head -5

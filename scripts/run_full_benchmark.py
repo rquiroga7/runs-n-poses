@@ -357,16 +357,16 @@ def main():
 
         # Simple: for each method, dock (skipped if already done by --resume), then analyze.
         methods = [
-            ("vina (8,32)",    step_dock_vina,        [("vina", "autodock_vina_8",   OUT_VINA_8,    ANALYSIS / "vina_8"),
-                                                       ("vina", "autodock_vina_32",  OUT_VINA_32,   ANALYSIS / "vina_32")]),
-            ("qvina-w",        step_dock_qvina_w,     [("vina", "qvina_w",           OUT_QVINA_W,   ANALYSIS / "qvina_w")]),
-            ("quickvina2",     step_dock_quickvina2,  [("vina", "quickvina2",        OUT_QUICKVINA2,ANALYSIS / "quickvina2")]),
-            ("autodock-gpu",   step_dock_autodock_gpu,[("adgpu","autodock_gpu",      OUT_AUTODOCK_GPU,ANALYSIS / "autodock_gpu")]),
-            ("vina-8-meeko",   step_dock_vina_meeko_8,[("vina", "vina_8_meeko",      OUT_VINA_8_MEEKO,ANALYSIS / "vina_8_meeko")]),
             ("vinardock",      step_dock_vinardo,     [("vinardo","vinardock_2vinardo",OUT_VINARDO,ANALYSIS / "vinardock_2vinardo")]),
             ("vinardock-meeko",step_dock_vinardo_meeko,[("vinardo","vinardock_meeko",OUT_VINARDO_MEEKO,ANALYSIS / "vinardock_meeko")]),
             ("rdock",          step_dock_rdock,       [("vina", "rdock",             OUT_RDOCK,     ANALYSIS / "rdock")]),
             ("gnina",          step_dock_gnina,       [("vina", "gnina",             OUT_GNINA,     ANALYSIS / "gnina")]),
+            ("vina (8,32)",    step_dock_vina,        [("vina", "autodock_vina_8",   OUT_VINA_8,    ANALYSIS / "vina_8"),
+                                                       ("vina", "autodock_vina_32",  OUT_VINA_32,   ANALYSIS / "vina_32")]),
+            ("vina-8-meeko",   step_dock_vina_meeko_8,[("vina", "vina_8_meeko",      OUT_VINA_8_MEEKO,ANALYSIS / "vina_8_meeko")]),
+            ("qvina-w",        step_dock_qvina_w,     [("vina", "qvina_w",           OUT_QVINA_W,   ANALYSIS / "qvina_w")]),
+            ("quickvina2",     step_dock_quickvina2,  [("vina", "quickvina2",        OUT_QUICKVINA2,ANALYSIS / "quickvina2")]),
+            ("autodock-gpu",   step_dock_autodock_gpu,[("adgpu","autodock_gpu",      OUT_AUTODOCK_GPU,ANALYSIS / "autodock_gpu")]),
             ("vina-32-meeko",  step_dock_vina_meeko_32,[("vina","vina_32_meeko",     OUT_VINA_32_MEEKO,ANALYSIS / "vina_32_meeko")]),
         ]
 
